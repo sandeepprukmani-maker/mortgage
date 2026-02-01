@@ -1,0 +1,72 @@
+# Environment variables
+.env
+.claude
+
+# Azure credentials (NEVER commit these!)
+.azure-credentials.json
+*-credentials.json
+# Python
+app/server/__pycache__/
+app/server/*.py[cod]
+app/server/*$py.class
+app/server/*.so
+app/server/.Python
+app/server/env/
+app/server/venv/
+app/server/.venv
+app/server/*.egg-info/
+app/server/.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.npm
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+!app/server/db/backup.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Bun lock files
+bun.lock
+bun.lockb
+
+# Docker files (from app/client/.dockerignore and app/server/.dockerignore)
+# Dockerfile
+# .dockerignore
+# docker-compose*.yml
+
+# App Server specific (from app/server/.dockerignore)
+build/
+.eggs/
+htmlcov/
+.coverage
+ENV/
+
+# App Client specific (from app/client/.dockerignore)
+.env.local
+.env.*.local
+coverage/
+
+# App logs directories
+app/server/logs/
+app/client/logs/
+logs/

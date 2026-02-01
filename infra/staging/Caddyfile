@@ -1,0 +1,67 @@
+# Caddyfile for Valargen Staging
+# Automatic HTTPS via Let's Encrypt
+
+# Replace with your staging domain or use VM IP
+{$DOMAIN:app.staging.valargen.com} {
+    # Frontend - Vue app served by nginx
+    handle {
+        reverse_proxy client:80
+    }
+
+    # API routes - proxy to FastAPI
+    handle /api/* {
+        reverse_proxy server:8000
+    }
+
+    # Health check endpoint
+    handle /health {
+        reverse_proxy server:8000
+    }
+
+    # API docs
+    handle /docs* {
+        reverse_proxy server:8000
+    }
+    handle /openapi.json {
+        reverse_proxy server:8000
+    }
+    handle /redoc* {
+        reverse_proxy server:8000
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+}
+
+# HTTP to HTTPS redirect (automatic with Caddy, but explicit)
+http://{$DOMAIN:app.staging.valargen.com} {
+    redir https://{host}{uri} permanent
+}
+
+# Optional: Use IP address for initial setup (no SSL)
+# Uncomment this block and comment out the domain blocks above
+# :80 {
+#     handle {
+#         reverse_proxy client:80
+#     }
+#     handle /api/* {
+#         reverse_proxy server:8000
+#     }
+#     handle /health {
+#         reverse_proxy server:8000
+#     }
+# }

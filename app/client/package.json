@@ -1,0 +1,29 @@
+{
+  "name": "valargen-client",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@iconify/vue": "^4.3.0",
+    "@vueuse/core": "^14.1.0",
+    "apexcharts": "^4.0.0",
+    "axios": "^1.13.2",
+    "pinia": "^3.0.4",
+    "vue": "^3.4.0",
+    "vue-router": "^4.6.4",
+    "vue3-apexcharts": "^1.8.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.1",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "vite": "^5.0.0"
+  }
+}

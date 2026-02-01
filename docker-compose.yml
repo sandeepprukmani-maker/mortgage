@@ -1,0 +1,145 @@
+# Docker Compose - Local development simulating Azure architecture
+# Same Docker images used in production (App Service for Containers)
+
+services:
+  # Azure App Service for Containers
+  server:
+    build:
+      context: ./app/server
+      dockerfile: Dockerfile
+      target: production
+    container_name: valargen-server
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://valargen:valargen@pgbouncer:6432/valargen
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1
+    volumes:
+      - ./app/server/.env:/app/.env:ro
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - valargen-network
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Azure Static Web App (local dev uses Vite)
+  client:
+    build:
+      context: ./app/client
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ""
+    container_name: valargen-client
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - valargen-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Azure Container Instance - PgBouncer
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    container_name: valargen-pgbouncer
+    restart: unless-stopped
+    environment:
+      DATABASES_HOST: postgres
+      DATABASES_PORT: 5432
+      DATABASES_USER: valargen
+      DATABASES_PASSWORD: valargen
+      DATABASES_DBNAME: valargen
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 20
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      SERVER_IDLE_TIMEOUT: 30
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - valargen-network
+    expose:
+      - "6432"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 6432 && sleep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Azure PostgreSQL Flexible Server
+  postgres:
+    image: postgres:15-alpine
+    container_name: valargen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: valargen
+      POSTGRES_PASSWORD: valargen
+      POSTGRES_DB: valargen
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - valargen-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U valargen -d valargen"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Azure Cache for Redis
+  redis:
+    image: redis:7-alpine
+    container_name: valargen-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - valargen-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Azure Storage (Queue + Blob)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: valargen-azurite
+    restart: unless-stopped
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --loose
+    volumes:
+      - azurite-data:/data
+    networks:
+      - valargen-network
+    expose:
+      - "10000"
+      - "10001"
+
+volumes:
+  postgres-data:
+  redis-data:
+  azurite-data:
+
+networks:
+  valargen-network:
+    driver: bridge

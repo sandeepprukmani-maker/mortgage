@@ -1,0 +1,155 @@
+# Docker Compose - Production environment for Azure VM (D4s v3: 4 vCPU, 16GB RAM)
+# Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # Caddy reverse proxy with automatic SSL
+  caddy:
+    image: caddy:2-alpine
+    container_name: valargen-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/prod/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - valargen-network
+    depends_on:
+      client:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  server:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.5'
+        reservations:
+          memory: 1G
+    environment:
+      - DEBUG=0
+      - LOG_LEVEL=warning
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL:-postgresql://valargen:valargen@pgbouncer:6432/valargen}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - STORAGE_CONNECTION_STRING=${STORAGE_CONNECTION_STRING}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://valargen.com}
+      - KEY_VAULT_NAME=${KEY_VAULT_NAME:-}
+
+  client:
+    ports: []  # Remove direct port exposure, use Caddy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+
+  pgbouncer:
+    environment:
+      - MAX_CLIENT_CONN=200
+      - DEFAULT_POOL_SIZE=40
+      - MIN_POOL_SIZE=10
+      - RESERVE_POOL_SIZE=10
+      - SERVER_IDLE_TIMEOUT=60
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  postgres:
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - max_connections=100
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=64MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - logging_collector=on
+      - -c
+      - log_directory=/var/log/postgresql
+      - -c
+      - log_filename=postgresql.log
+      - -c
+      - log_min_duration_statement=1000
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '1.5'
+        reservations:
+          memory: 2G
+
+  redis:
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 512M
+
+  azurite:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Backup service - runs daily PostgreSQL backup
+  backup:
+    image: postgres:15-alpine
+    container_name: valargen-backup
+    restart: "no"
+    volumes:
+      - ./backups:/backups
+      - backup-scripts:/scripts
+    environment:
+      - PGHOST=postgres
+      - PGUSER=valargen
+      - PGPASSWORD=valargen
+      - PGDATABASE=valargen
+    networks:
+      - valargen-network
+    entrypoint: /bin/sh
+    command: ["-c", "echo 'Backup container ready. Use: docker compose exec backup pg_dump -Fc > /backups/valargen_$(date +%Y%m%d).dump'"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backup
+
+volumes:
+  caddy-data:
+  caddy-config:
+  backup-scripts:
+
+networks:
+  valargen-network:
+    driver: bridge
