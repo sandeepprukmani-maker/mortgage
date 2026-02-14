@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mortgage Price Analyzer</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* Make multi-selects usable */
+    select[multiple] { height: 120px; }
+    .hint { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Mortgage Price Analyzer</h1>
+      <p>Analyze mortgage quotes using customer data from the database.</p>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="analyze">Database Analysis</button>
+      <button class="tab-btn" data-tab="builder">Payload Builder</button>
+      <button class="tab-btn" data-tab="customers">Manage Customers</button>
+    </nav>
+
+    <section id="analyzeSection" class="tab-content active">
+      <div class="controls">
+        <form id="analyzeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="analyzePayloadSelect">Select Payload Template:</label>
+              <select id="analyzePayloadSelect" name="analyzePayloadSelect">
+                <option value="">-- Select a Payload --</option>
+              </select>
+              <small>This payload will be used as a template for all customers in the database.</small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="min_savings">Min Monthly Savings ($):</label>
+              <input type="number" id="min_savings" name="min_savings" value="200" step="10" />
+            </div>
+            <div class="form-group">
+              <label for="target_amount">Target Amount (Credit/Cost) ($):</label>
+              <input type="number" id="target_amount" name="target_amount" value="-2000" step="100" />
+              <small>Negative = Credit to borrower</small>
+            </div>
+            <div class="form-group">
+              <label for="tolerance">Tolerance ($):</label>
+              <input type="number" id="tolerance" name="tolerance" placeholder="Optional" step="10" />
+            </div>
+          </div>
+
+          <button type="submit" id="submitBtn">Analyze</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="builderSection" class="tab-content">
+      <div class="controls">
+        <div class="saved-payloads">
+          <label for="payloadSelect">Saved Payloads:</label>
+          <div class="form-row">
+            <select id="payloadSelect" style="flex: 1;">
+              <option value="">-- Select a Payload --</option>
+            </select>
+            <button type="button" id="deletePayloadBtn" class="secondary-btn" style="width: auto;">Delete</button>
+          </div>
+        </div>
+
+        <div class="json-import-area">
+          <label for="jsonImportText">Import Payload JSON:</label>
+          <textarea id="jsonImportText" placeholder='Paste JSON here... e.g. {"borrowerName": "John", ...}' rows="4" style="width: 100%; font-family: monospace; margin-bottom: 0.5rem;"></textarea>
+          <button type="button" id="loadJsonBtn" class="secondary-btn">Load JSON into Form</button>
+        </div>
+
+        <form id="builderForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="payloadName">Payload Name (to save)</label>
+              <input type="text" id="payloadName" placeholder="e.g. My Custom Scenario" />
+            </div>
+
+            <div class="form-group">
+              <label for="borrowerName">Borrower Name</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="borrowerName" checked />
+                <input type="text" id="borrowerName" name="borrowerName" value="John Homeowner" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="brokerAlias">Broker Alias</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="brokerAlias" checked />
+                <input type="text" id="brokerAlias" name="brokerAlias" value="ABC123" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="loanOfficer">Loan Officer Email</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="loanOfficer" checked />
+                <input type="text" id="loanOfficer" name="loanOfficer" value="lofficer@email.com" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loanAmount">Loan Amount ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="loanAmount" checked />
+                <input type="number" id="loanAmount" name="loanAmount" value="300000" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="loanTypeIds">Loan Type (Array)</label>
+              <div style="display:flex; align-items:flex-start; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="loanTypeIds" checked />
+                <div style="flex:1;">
+                  <select id="loanTypeIds" name="loanTypeIds" multiple>
+                    <option value="0" selected>Conventional</option>
+                    <option value="1">Conventional ARM</option>
+                    <option value="2">FHA</option>
+                    <option value="3">FHA ARM</option>
+                    <option value="4">VA</option>
+                    <option value="5">VA ARM</option>
+                    <option value="6">USDA</option>
+                  </select>
+                  <div class="hint">Tip: hold Ctrl (Windows) / ⌘ (Mac) to select multiple.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="purposeTypeId">Purpose</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="purposeTypeId" checked />
+                <select id="purposeTypeId" name="purposeTypeId">
+                  <option value="1">Purchase Home</option>
+                  <option value="3" selected>Refinance 1st Mortgage</option>
+                  <option value="6">Construction Purchase</option>
+                  <option value="12">Construction Refinance</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="refinancePurposeId">Refinance Purpose</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="refinancePurposeId" checked />
+                <select id="refinancePurposeId" name="refinancePurposeId">
+                  <option value="Cash Out">Cash Out</option>
+                  <option value="Rate And Term Reduction-CONV" selected>Rate And Term Reduction-CONV</option>
+                  <option value="Rate And Term Reduction-FHA">Rate And Term Reduction-FHA</option>
+                  <option value="Streamline Refinance">Streamline Refinance</option>
+                  <option value="VA Interest Rate Reduction">VA Interest Rate Reduction</option>
+                  <option value="VA Cash Out - Type I">VA Cash Out - Type I</option>
+                  <option value="VA Cash Out - Type II">VA Cash Out - Type II</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="salesPrice">Sales Price ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="salesPrice" checked />
+                <input type="number" id="salesPrice" name="salesPrice" value="325000" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="appraisedValue">Appraised Value ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="appraisedValue" checked />
+                <input type="number" id="appraisedValue" name="appraisedValue" value="325000" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="propertyTypeId">Property Type</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="propertyTypeId" checked />
+                <select id="propertyTypeId" name="propertyTypeId">
+                  <option value="22" selected>Single Family Residence</option>
+                  <option value="25">2–4 Unit Dwelling</option>
+                  <option value="30">Cooperative</option>
+                  <option value="32">PUD</option>
+                  <option value="34">Condominium</option>
+                  <option value="38">Modular</option>
+                  <option value="48">Site Condo</option>
+                  <option value="52">Manufactured Condo Single Wide</option>
+                  <option value="53">Manufactured PUD Single Wide</option>
+                  <option value="54">Manufactured Single Wide</option>
+                  <option value="55">Manufactured Multi Wide</option>
+                  <option value="56">Manufactured Condo Multi Wide</option>
+                  <option value="57">Manufactured PUD Multi Wide</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="occupancyTypeId">Occupancy</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="occupancyTypeId" checked />
+                <select id="occupancyTypeId" name="occupancyTypeId">
+                  <option value="1" selected>Primary Residence</option>
+                  <option value="2">Investment Property</option>
+                  <option value="3">Secondary Residence</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="creditScore">Credit Score</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="creditScore" checked />
+                <input type="number" id="creditScore" name="creditScore" value="750" min="300" max="850" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="propertyZipCode">Zip Code</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="propertyZipCode" checked />
+                <input type="text" id="propertyZipCode" name="propertyZipCode" value="48341" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="numberOfUnits">Number of Units</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="numberOfUnits" checked />
+                <input type="number" id="numberOfUnits" name="numberOfUnits" value="1" min="1" max="4" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="attachmentTypeId">Attachment Type</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="attachmentTypeId" checked />
+                <select id="attachmentTypeId" name="attachmentTypeId">
+                  <option value="0" selected>Attached</option>
+                  <option value="1">Detached</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prepaymentPenaltyId">Prepayment Penalty (Investment)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="prepaymentPenaltyId" checked />
+                <select id="prepaymentPenaltyId" name="prepaymentPenaltyId">
+                  <option value="1" selected>None</option>
+                  <option value="2">1 Year Penalty</option>
+                  <option value="4">2 Year Penalty</option>
+                  <option value="7">3 Year Penalty</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="numberOfFinancedProperties">Financed Properties</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="numberOfFinancedProperties" checked />
+                <input type="number" id="numberOfFinancedProperties" name="numberOfFinancedProperties" value="1" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="leaseTypeId">Lease Type (Investor Flex)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="leaseTypeId" checked />
+                <select id="leaseTypeId" name="leaseTypeId">
+                  <option value="1" selected>Unleased</option>
+                  <option value="2">Long-Term Lease</option>
+                  <option value="3">Short-Term Rental</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="debtServiceCoverageRatio">DSCR (Decimal)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="debtServiceCoverageRatio" checked />
+                <input type="number" id="debtServiceCoverageRatio" name="debtServiceCoverageRatio" value="2.00" step="0.01" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="mortgageInsuranceType">Mortgage Insurance</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="mortgageInsuranceType" checked />
+                <select id="mortgageInsuranceType" name="mortgageInsuranceType">
+                  <option value="1" selected>BPMI (Monthly)</option>
+                  <option value="2">LPMI Lender Paid</option>
+                  <option value="3">Split 50</option>
+                  <option value="4">Split 100</option>
+                  <option value="5">Single Premium</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="controlYourPrice">CYP Bps (0-40)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="controlYourPrice" checked />
+                <input type="number" id="controlYourPrice" name="controlYourPrice" value="0" min="0" max="40" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="commitmentPeriodId">Lock Period</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="commitmentPeriodId" checked />
+                <select id="commitmentPeriodId" name="commitmentPeriodId">
+                    <option value="13" selected>30-Day</option>
+                    <option value="21">8-Day</option>
+                    <option value="20">11-Day</option>
+                    <option value="12">15-Day</option>
+                    <option value="19">22-Day</option>
+                    <option value="14">45-Day</option>
+                    <option value="15">60-Day</option>
+                    <option value="16">90-Day</option>
+                    <option value="17">120-Day</option>
+                    <option value="18">180-Day</option>
+                    <option value="22">150-Day</option>
+                    <option value="23">270-Day</option>
+                    <option value="24">365-Day</option>
+                    <option value="-1">Custom</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="secondLoanAmount">Second Loan Amount ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="secondLoanAmount" checked />
+                <input type="number" id="secondLoanAmount" name="secondLoanAmount" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="monthlyIncome">Monthly Income ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="monthlyIncome" checked />
+                <input type="number" id="monthlyIncome" name="monthlyIncome" value="4000" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="currentMonthlyPayment">Current Payment ($) (NOT sent to API)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="currentMonthlyPayment" checked />
+                <input type="number" id="currentMonthlyPayment" name="currentMonthlyPayment" value="2000" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="monthlyDebt">Monthly Debt ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="monthlyDebt" checked />
+                <input type="number" id="monthlyDebt" name="monthlyDebt" value="0" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="annualTaxes">Annual Taxes ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="annualTaxes" checked />
+                <input type="number" id="annualTaxes" name="annualTaxes" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="annualHomeownersInsurance">Annual Homeowners Ins ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="annualHomeownersInsurance" checked />
+                <input type="number" id="annualHomeownersInsurance" name="annualHomeownersInsurance" value="0" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="annualPercentageRateFees">APR Fees ($)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="annualPercentageRateFees" checked />
+                <input type="number" id="annualPercentageRateFees" name="annualPercentageRateFees" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="monthsOfBankStatementsId">Bank Statement Months</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="monthsOfBankStatementsId" checked />
+                <select id="monthsOfBankStatementsId" name="monthsOfBankStatementsId">
+                  <option value="0" selected>None</option>
+                  <option value="12">12 Months</option>
+                  <option value="24">24 Months</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="monthsOfReservesId">Months of Reserves (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="monthsOfReservesId" checked />
+                <input type="number" id="monthsOfReservesId" name="monthsOfReservesId" value="0" step="0.1" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="numberOfBorrowers">Number of Borrowers (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="numberOfBorrowers" checked />
+                <select id="numberOfBorrowers" name="numberOfBorrowers">
+                  <option value="1" selected>One Borrower</option>
+                  <option value="2">Two Borrowers</option>
+                  <option value="3">Three Borrowers</option>
+                  <option value="4">Four Borrowers</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="compensationPayerTypeID">Comp Payer (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="compensationPayerTypeID" checked />
+                <select id="compensationPayerTypeID" name="compensationPayerTypeID">
+                  <option value="0">Borrower Paid</option>
+                  <option value="1" selected>Lender Paid</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exact rate / target values -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="exactRateTypeId">Exact Rate Type (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="exactRateTypeId" checked />
+                <select id="exactRateTypeId" name="exactRateTypeId">
+                  <option value="2" selected>Target Price After Compensation</option>
+                  <option value="1">Target Rate</option>
+                  <option value="0">None</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="buyDownAliasID">Buydown Type (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="buyDownAliasID" checked />
+                <select id="buyDownAliasID" name="buyDownAliasID">
+                  <option value="None" selected>None</option>
+                  <option value="1-0">1-0</option>
+                  <option value="1-0 LLPA">1-0 LLPA</option>
+                  <option value="1-1">1-1</option>
+                  <option value="1-1 LLPA">1-1 LLPA</option>
+                  <option value="2-1">2-1</option>
+                  <option value="2-1 LLPA">2-1 LLPA</option>
+                  <option value="3-2-1">3-2-1</option>
+                  <option value="3-2-1 LLPA">3-2-1 LLPA</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="targetPriceValue">Target Price Value (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="targetPriceValue" checked />
+                <input type="number" id="targetPriceValue" name="targetPriceValue" value="0" step="0.001" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="targetCashValue">Target Cash Value (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="targetCashValue" checked />
+                <input type="number" id="targetCashValue" name="targetCashValue" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="targetRateValue">Target Rate Value (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="targetRateValue" checked />
+                <input type="number" id="targetRateValue" name="targetRateValue" value="0" step="0.001" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="escrowWaiverTypeId">Escrow Waiver (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="escrowWaiverTypeId" checked />
+                <select id="escrowWaiverTypeId" name="escrowWaiverTypeId">
+                  <option value="1" selected>No Waiver</option>
+                  <option value="2">Waive Taxes Only</option>
+                  <option value="3">Waive Hazard Insurance Only</option>
+                  <option value="4">Waive Taxes & Hazard Insurance</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Array fields: loanTermIds, waivableFeeTypeIds, useMortgageInsuranceTypeIds -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loanTermIds">Loan Term Ids (Array, Optional)</label>
+              <div style="display:flex; align-items:flex-start; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="loanTermIds" checked />
+                <div style="flex:1;">
+                  <select id="loanTermIds" name="loanTermIds" multiple>
+                    <option value="5">40 Years (Conventional only)</option>
+                    <option value="4" selected>30 Years</option>
+                    <option value="3">25 Years</option>
+                    <option value="2">20 Years</option>
+                    <option value="1">15 Years</option>
+                    <option value="0">10 Years</option>
+                  </select>
+                  <div class="hint">Tip: hold Ctrl / ⌘ to select multiple.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="waivableFeeTypeIds">Waivable Fee Type Ids (Array, Optional)</label>
+              <div style="display:flex; align-items:flex-start; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="waivableFeeTypeIds" checked />
+                <div style="flex:1;">
+                  <select id="waivableFeeTypeIds" name="waivableFeeTypeIds" multiple>
+                    <option value="0" selected>Underwriting Fee</option>
+                    <option value="2">TRAC+ Fee (tracTypeId = 2)</option>
+                    <option value="3">PA+ Fee (paPlusTypeId in 1,2,3,4,6,7,8)</option>
+                  </select>
+                  <div class="hint">Tip: hold Ctrl / ⌘ to select multiple.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="loanShieldTypeId">Loan Shield (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="loanShieldTypeId" checked />
+                <select id="loanShieldTypeId" name="loanShieldTypeId">
+                  <option value="0" selected>Do not include Loan Shield</option>
+                  <option value="1">Include Loan Shield</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="paPlusTypeId">PA+ Type (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="paPlusTypeId" checked />
+                <select id="paPlusTypeId" name="paPlusTypeId">
+                  <option value="0" selected>In-House</option>
+                  <option value="1">PA+ Full Service</option>
+                  <option value="6">PA+ Setup and Underwriting</option>
+                  <option value="7">PA+ Setup and Closing</option>
+                  <option value="8">PA+ Underwriting and Closing</option>
+                  <option value="2">PA+ Setup Only</option>
+                  <option value="3">PA+ Underwriting Only</option>
+                  <option value="4">PA+ Closing Only</option>
+                  <option value="5">Third-Party Processor</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- VA/FHA conditional fields -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="financedMortgageInsuranceTypeId">VA Funding Fee Type (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="financedMortgageInsuranceTypeId" checked />
+                <select id="financedMortgageInsuranceTypeId" name="financedMortgageInsuranceTypeId">
+                  <option value="6" selected>Financed</option>
+                  <option value="7">Non-Financed</option>
+                  <option value="12">Exempt</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="useMortgageInsuranceTypeIds">VA Use Type Ids (Array, Optional)</label>
+              <div style="display:flex; align-items:flex-start; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="useMortgageInsuranceTypeIds" checked />
+                <div style="flex:1;">
+                  <select id="useMortgageInsuranceTypeIds" name="useMortgageInsuranceTypeIds" multiple>
+                    <option value="8" selected>First Use</option>
+                    <option value="9">Subsequent Use</option>
+                  </select>
+                  <div class="hint">Tip: hold Ctrl / ⌘ to select multiple.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="federalHousingAdministrationSecondarySourceTypeId">FHA Secondary Source (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="federalHousingAdministrationSecondarySourceTypeId" checked />
+                <select id="federalHousingAdministrationSecondarySourceTypeId" name="federalHousingAdministrationSecondarySourceTypeId">
+                  <option value="1" selected>Government</option>
+                  <option value="2">Non-Profit</option>
+                  <option value="3">Family/Relative</option>
+                  <option value="4">Employee/Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="tracTypeId">TRAC Type (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="tracTypeId" checked />
+                <select id="tracTypeId" name="tracTypeId">
+                  <option value="0" selected>Traditional Lenders Policy</option>
+                  <option value="2">TRAC+</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tracIncentiveID">TRAC Incentive (Optional)</label>
+              <div style="display:flex; align-items:center; gap:.5rem;">
+                <input type="checkbox" class="field-toggle" data-field="tracIncentiveID" checked />
+                <select id="tracIncentiveID" name="tracIncentiveID">
+                  <option value="">(none)</option>
+                  <option value="1">Apply Credit as an LLPA</option>
+                  <option value="2">Send Check to Borrower</option>
+                  <option value="3">Apply Credit in Fees</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="includeFlexTerms" checked />
+                <input type="checkbox" id="includeFlexTerms" name="includeFlexTerms" />
+                Include Flex Terms (Optional)
+              </label>
+            </div>
+          </div>
+
+          <!-- Booleans -->
+          <div class="form-row">
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="firstTimeHomeBuyer" checked />
+                <input type="checkbox" id="firstTimeHomeBuyer" name="firstTimeHomeBuyer" />
+                First Time Homebuyer
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isDTIOver45Percent" checked />
+                <input type="checkbox" id="isDTIOver45Percent" name="isDTIOver45Percent" />
+                DTI Over 45%
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="selfEmployed" checked />
+                <input type="checkbox" id="selfEmployed" name="selfEmployed" />
+                Self Employed
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isCorrespondent" checked />
+                <input type="checkbox" id="isCorrespondent" name="isCorrespondent" />
+                Correspondent
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isFirstTimeInvestor" checked />
+                <input type="checkbox" id="isFirstTimeInvestor" name="isFirstTimeInvestor" />
+                First Time Investor
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+                <input type="checkbox" class="field-toggle" data-field="waiveUnderwritingFee" checked />
+                <input type="checkbox" id="waiveUnderwritingFee" name="waiveUnderwritingFee" />
+                Waive Underwriting Fee
+              </label>
+            </div>
+          </div>
+
+          <div class="builder-actions">
+            <button type="button" id="previewBtn" class="secondary-btn">Preview JSON</button>
+            <button type="button" id="downloadBtn" class="secondary-btn">Download JSON</button>
+            <button type="button" id="savePayloadBtn" class="secondary-btn">Save Payload</button>
+            <button type="submit" id="buildAnalyzeBtn">Analyze Scenario</button>
+          </div>
+        </form>
+
+        <div id="jsonPreview" class="hidden">
+          <h4>JSON Preview</h4>
+          <pre id="jsonContent"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="customersSection" class="tab-content">
+      <div class="controls">
+        <div class="form-row">
+          <div class="form-group" style="flex:2;">
+            <input type="text" id="customerSearch" placeholder="Search customers by name..." />
+          </div>
+        </div>
+
+        <h3>Manage Customers</h3>
+        <form id="customerForm">
+          <input type="hidden" id="customerId" />
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cName">Name</label>
+              <input type="text" id="cName" required />
+            </div>
+            <div class="form-group">
+              <label for="cIncome">Monthly Income ($)</label>
+              <input type="number" id="cIncome" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cPayment">Current Payment ($)</label>
+              <input type="number" id="cPayment" required />
+            </div>
+            <div class="form-group">
+              <label for="cBalance">Remaining Balance ($)</label>
+              <input type="number" id="cBalance" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cValue">Property Value ($)</label>
+              <input type="number" id="cValue" required />
+            </div>
+            <div class="form-group">
+              <label for="cZip">Zip Code</label>
+              <input type="text" id="cZip" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cState">State</label>
+              <input type="text" id="cState" maxlength="2" required />
+            </div>
+            <div class="form-group">
+              <label for="cScore">Credit Score</label>
+              <input type="number" id="cScore" min="300" max="850" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <button type="submit" id="saveCustomerBtn">Save Customer</button>
+            <button type="button" id="cancelCustomerBtn" class="secondary-btn">Cancel</button>
+          </div>
+        </form>
+
+        <div class="customer-list-container">
+          <table id="customerTable" class="results-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Income</th>
+                <th>Payment</th>
+                <th>Score</th>
+                <th>Payload & Analysis</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsSection" class="hidden">
+      <h2>Analysis Results</h2>
+      <div id="resultsContainer"></div>
+    </section>
+
+    <section id="errorSection" class="hidden">
+      <div class="error-card">
+        <h3>Error</h3>
+        <p id="errorMessage"></p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>

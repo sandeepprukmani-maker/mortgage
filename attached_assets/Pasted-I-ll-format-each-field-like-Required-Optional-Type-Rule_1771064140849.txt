@@ -1,0 +1,711 @@
+I’ll format each field like:
+
+Required/Optional
+
+Type
+
+Rules / when applicable
+
+Allowed values / range
+
+Default (if documented)
+
+Core identity + loan basics
+brokerAlias
+
+Required
+
+String
+
+Unique identifier for the broker/broker shop creating the pricing scenario.
+
+loanOfficer
+
+Optional
+
+String
+
+Must be a valid email (contains @ and a domain like .com).
+
+loanAmount
+
+Required
+
+Number
+
+Loan amount.
+
+loanTypeIds
+
+Required
+
+Array of strings
+
+Each element must be a loan type id (not a comma-joined list).
+
+Rule: If purposeTypeId = "3" then loanTypeIds can only contain ONE value.
+
+Allowed values:
+
+"0" Conventional (default)
+
+"1" Conventional ARM
+
+"2" FHA
+
+"3" FHA ARM
+
+"4" VA
+
+"5" VA ARM
+
+"6" USDA
+
+✅ Correct example:
+
+"loanTypeIds": ["0", "2", "4"]
+
+
+❌ Wrong (your sample does this):
+
+"loanTypeIds": ["0, 2, 4"]
+
+purposeTypeId
+
+Required
+
+String
+
+Loan purpose id.
+
+Allowed:
+
+"1" Purchase Home (default)
+
+"3" Refinance 1st Mortgage
+
+"6" Construction Purchase
+
+"12" Construction Refinance
+
+salesPrice
+
+Conditionally required (only applicable)
+
+Number
+
+Only applicable when purposeTypeId is "1" or "6".
+
+appraisedValue
+
+Required
+
+Number
+
+Appraised value of subject property.
+
+Borrower + property
+firstTimeHomeBuyer
+
+Required
+
+Boolean
+
+true / false
+
+propertyTypeId
+
+Required
+
+String
+
+Allowed values:
+
+"22" Single Family Residence (default)
+
+"25" 2–4 Unit Dwelling
+
+"30" Cooperative
+
+"32" PUD
+
+"34" Condominium
+
+"38" Modular
+
+"48" Site Condo
+
+"52" Manufactured Condo Single Wide
+
+"53" Manufactured PUD Single Wide
+
+"54" Manufactured Single Wide
+
+"55" Manufactured Multi Wide
+
+"56" Manufactured Condo Multi Wide
+
+"57" Manufactured PUD Multi Wide
+
+occupancyTypeId
+
+Required
+
+String
+
+Allowed:
+
+"1" Primary Residence (default)
+
+"2" Investment Property
+
+"3" Secondary Residence
+
+propertyZipCode
+
+Required
+
+String
+
+ZIP code of subject property.
+
+creditScore
+
+Required
+
+Number
+
+Must be 300–850.
+
+monthlyIncome
+
+Required
+
+Number
+
+Borrower monthly income.
+
+borrowerName
+
+Required
+
+String
+
+Full name of borrower (also the name the scenario is saved under).
+
+Multi-unit / condo attachment rules
+numberOfUnits
+
+Optional
+
+Number
+
+Only applicable if propertyTypeId is one of:
+"25","30","32","34","48","52","53","54","55","56","57"
+
+Allowed: 2, 3, 4
+
+attachmentTypeId
+
+Optional
+
+String
+
+Only applicable if propertyTypeId is one of: "34","48","52","56"
+
+Allowed:
+
+"0" Attached (default)
+
+"1" Detached
+
+Investor / occupancy=2 specific fields
+
+The next fields are only applicable if occupancyTypeId = "2" (Investment Property).
+
+prepaymentPenaltyId
+
+Conditionally applicable
+
+String
+
+Allowed:
+
+"1" None
+
+"2" 1 Year Penalty
+
+"4" 2 Year Penalty
+
+"7" 3 Year Penalty
+
+numberOfFinancedProperties
+
+Optional
+
+Number
+
+Only applicable for occupancyTypeId="2".
+
+leaseTypeId
+
+Optional
+
+String
+
+Only applicable for occupancyTypeId="2".
+
+Impacts pricing for Investor Flex products only.
+
+Allowed:
+
+"1" Unleased (default)
+
+"2" Long-Term Lease
+
+"3" Short-Term Rental
+
+isFirstTimeInvestor
+
+Optional
+
+Boolean
+
+Only applicable for occupancyTypeId="2".
+
+Impacts pricing for Investor Flex only.
+
+Default: false
+
+debtServiceCoverageRatio
+
+Optional
+
+Number
+
+Only applicable for occupancyTypeId="2".
+
+Can be decimal.
+
+⚠️ Your example uses debtServiceCreditRatio — but the doc field is debtServiceCoverageRatio.
+
+Refinance-specific
+refinancePurposeId
+
+Optional
+
+String
+
+Only applicable if purposeTypeId is "3" or "12".
+
+Allowed values depend on loanTypeIds:
+
+If loanTypeIds is "0" or "1":
+
+Cash Out
+
+Rate And Term Reduction-CONV (default)
+
+If loanTypeIds is "2" or "3":
+
+Rate And Term Reduction-FHA (default)
+
+Cash Out
+
+Streamline Refinance
+
+If loanTypeIds is "4" or "5":
+
+VA Interest Rate Reduction (default)
+
+VA Cash Out - Type I
+
+VA Cash Out - Type II
+
+If loanTypeIds is "6":
+
+Cash Out
+
+Rate And Term Reduction-CONV (default)
+
+Mortgage insurance + pricing controls
+mortgageInsuranceType
+
+Conditionally applicable
+
+String
+
+Only applicable if LTV > 80%
+
+Allowed:
+
+"1" BPMI (Monthly) (default)
+
+"2" LPMI Lender paid
+
+"3" Split 50
+
+"4" Split 100
+
+"5" Single Premium
+
+controlYourPrice
+
+Required (in your excerpt)
+
+Number
+
+Must be 0 to 40 (bps added).
+
+(Doc note: system does not verify bps availability.)
+
+secondLoanAmount
+
+Optional
+
+Number
+
+Second loan amount.
+
+commitmentPeriodId
+
+Required (not marked optional in your excerpt — but has defaults)
+
+String
+
+Allowed:
+
+"-1" Custom
+
+"21" 8-Day
+
+"20" 11-Day
+
+"12" 15-Day
+
+"19" 22-Day
+
+"13" 30-Day (default)
+
+"14" 45-Day
+
+"15" 60-Day
+
+"16" 90-Day
+
+"17" 120-Day
+
+"22" 150-Day
+
+"18" 180-Day
+
+"23" 270-Day
+
+"24" 365-Day
+
+isCorrespondent
+
+Optional
+
+Boolean
+
+Only applicable for correspondent users
+
+false = priced as broker (default)
+
+true = priced as correspondent
+
+DTI / debts / taxes / insurance
+isDTIOver45Percent
+
+Optional
+
+Boolean
+
+false = DTI < 45%
+
+true = DTI > 45%
+
+monthlyDebt
+
+Optional
+
+Number
+
+Important rule:
+
+If isDTIOver45Percent = true, then monthlyDebt is auto-set to:
+
+monthlyDebt = (monthlyIncome * 0.45) + 1
+
+Example from doc: monthlyIncome=3000 → monthlyDebt=1351
+
+annualTaxes
+
+Optional
+
+Number
+
+annualHomeownersInsurance
+
+Optional
+
+Number
+
+annualPercentageRateFees
+
+Optional
+
+Number
+
+Finance charge amount.
+
+Employment / bank statements / reserves / borrowers
+selfEmployed
+
+Optional
+
+Boolean
+
+Default: false
+
+true allowed.
+
+monthsOfBankStatementsId
+
+Optional
+
+String
+
+Only applicable if selfEmployed = true
+
+Allowed:
+
+"0" None (default)
+
+"12" 12 Months
+
+"24" 24 Months
+
+monthsOfReservesId
+
+Optional
+
+String (doc says reserves can be decimal; field is still an Id in your snippet — follow doc’s type in your version)
+
+Impacts pricing for Bank Statement and Investor Flex only.
+
+“Months of reserves” can be decimal (per doc text).
+
+numberOfBorrowers
+
+Optional
+
+Number
+
+Allowed:
+
+1 (default)
+
+2
+
+3
+
+4
+
+Fees / escrow / terms / title / add-ons
+compensationPayerTypeID
+
+Optional
+
+String
+
+Allowed:
+
+"0" Borrower Paid
+
+"1" Lender Paid (default)
+
+escrowWaiverTypeId
+
+Optional
+
+String
+
+Allowed:
+
+"1" No Waiver (default selection)
+
+"2" Waive Taxes Only
+
+"3" Waive Hazard Insurance Only
+
+"4" Waive Taxes & Hazard Insurance
+
+loanTermIds
+
+Optional
+
+Array of strings
+
+Allowed:
+
+"5" 40 Years (only if loanTypeIds contains "0")
+
+"4" 30 Years (default selection)
+
+"3" 25 Years
+
+"2" 20 Years
+
+"1" 15 Years
+
+"0" 10 Years
+
+includeFlexTerms
+
+Optional
+
+Boolean
+
+true include flex terms, false don’t.
+
+tracTypeId
+
+Optional
+
+String
+
+Title selection option.
+
+Allowed:
+
+"0" Traditional Lenders Policy (default)
+
+"2" TRAC+
+
+waivableFeeTypeIds
+
+Optional
+
+Array of strings
+
+Fee(s) being waived.
+
+Underwriting fee can be waived here or using waiveUnderwritingFee (either works).
+
+Allowed:
+
+"0" Underwriting Fee
+
+"2" TRAC+ Fee (only if tracTypeId="2")
+
+"3" PA+ Fee (only if paPlusTypeId is "1","6","7","8","2","3","4")
+
+loanShieldTypeId
+
+Optional
+
+String
+
+Allowed:
+
+"0" Do not include Loan Shield (default)
+
+"1" Include Loan Shield
+
+paPlusTypeId
+
+Optional
+
+String
+
+Processing option.
+
+Allowed:
+
+"1" PA+ Full Service
+
+"6" PA+ Setup and Underwriting
+
+"7" PA+ Setup and Closing
+
+"8" PA+ Underwriting and Closing
+
+"2" PA+ Setup Only
+
+"3" PA+ Underwriting Only
+
+"4" PA+ Closing Only
+
+"0" In-House (default)
+
+"5" Third-Party Processor
+
+Exact rate / buydowns / targets
+exactRateTypeId
+
+Optional
+
+String
+
+Allowed:
+
+"2" Target Price After Compensation (default)
+
+"1" Target Rate
+
+"0" None
+
+buyDownAliasID
+
+Optional
+
+String
+
+Allowed:
+
+"None" (default)
+
+"1-0", "1-0 LLPA", "1-1", "1-1 LLPA", "2-1", "2-1 LLPA", "3-2-1", "3-2-1 LLPA"
+
+targetPriceValue
+
+Optional
+
+Number
+
+Only applicable if exactRateTypeId="2"
+
+Decimal allowed.
+
+targetCashValue
+
+Optional
+
+Number
+
+Only applicable if exactRateTypeId="2"
+
+targetRateValue
+
+Optional
+
+Number
+
+Only applicable if exactRateTypeId="1"
+
+Decimal allowed.
+
+Underwriting fee waive
+waiveUnderwritingFee
+
+Optional
+
+Boolean
+
+true waive underwriting fee
+
+false not waived (default)
+
+Same effect as using waivableFeeTypeIds with underwriting fee.
