@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Price Analyzer</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mortgage Price Analyzer</h1>
+            <p>Upload a customer JSON file to analyze mortgage quotes.</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="analyze">Analyze File</button>
+            <button class="tab-btn" data-tab="builder">Payload Builder</button>
+        </nav>
+
+        <section id="analyzeSection" class="tab-content active">
+            <div class="controls">
+                <form id="analyzeForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="file">Option A: Upload Customer JSON File:</label>
+                            <input type="file" id="file" name="file" accept=".json">
+                        </div>
+                        <div class="form-group">
+                            <label for="analyzePayloadSelect">Option B: Use Saved Payload:</label>
+                            <select id="analyzePayloadSelect" name="analyzePayloadSelect">
+                                <option value="">-- Select a Payload --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="min_savings">Min Monthly Savings ($):</label>
+                            <input type="number" id="min_savings" name="min_savings" value="200" step="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="target_amount">Target Amount (Credit/Cost) ($):</label>
+                            <input type="number" id="target_amount" name="target_amount" value="-2000" step="100">
+                            <small>Negative = Credit to borrower</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="tolerance">Tolerance ($):</label>
+                            <input type="number" id="tolerance" name="tolerance" placeholder="Optional" step="10">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn">Analyze</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="builderSection" class="tab-content">
+            <div class="controls">
+                <div class="saved-payloads">
+                    <label for="payloadSelect">Saved Payloads:</label>
+                    <div class="form-row">
+                        <select id="payloadSelect" style="flex: 1;">
+                            <option value="">-- Select a Payload --</option>
+                        </select>
+                        <button type="button" id="deletePayloadBtn" class="secondary-btn" style="width: auto;">Delete</button>
+                    </div>
+                </div>
+
+                <form id="builderForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="payloadName">Payload Name (to save)</label>
+                            <input type="text" id="payloadName" name="payloadName" placeholder="e.g. My Custom Scenario">
+                        </div>
+                        <div class="form-group">
+                            <label for="borrowerName">Borrower Name</label>
+                            <input type="text" id="borrowerName" name="borrowerName" value="John Homeowner">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="brokerAlias">Broker Alias</label>
+                            <input type="text" id="brokerAlias" name="brokerAlias" value="ABC123">
+                        </div>
+                        <div class="form-group">
+                            <label for="loanOfficer">Loan Officer Email</label>
+                            <input type="text" id="loanOfficer" name="loanOfficer" value="lofficer@email.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loanAmount">Loan Amount ($)</label>
+                            <input type="number" id="loanAmount" name="loanAmount" value="300000">
+                        </div>
+                        <div class="form-group">
+                            <label for="loanTypeIds">Loan Type</label>
+                            <select id="loanTypeIds" name="loanTypeIds">
+                                <option value="0" selected>Conventional</option>
+                                <option value="1">Conventional ARM</option>
+                                <option value="2">FHA</option>
+                                <option value="3">FHA ARM</option>
+                                <option value="4">VA</option>
+                                <option value="5">VA ARM</option>
+                                <option value="6">USDA</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="purposeTypeId">Purpose</label>
+                            <select id="purposeTypeId" name="purposeTypeId">
+                                <option value="1">Purchase Home</option>
+                                <option value="3" selected>Refinance</option>
+                                <option value="6">Construction Purchase</option>
+                                <option value="12">Construction Refinance</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="refinancePurposeId">Refinance Purpose</label>
+                            <select id="refinancePurposeId" name="refinancePurposeId">
+                                <option value="Cash Out">Cash Out</option>
+                                <option value="Rate And Term Reduction-CONV" selected>Rate And Term</option>
+                                <option value="Streamline Refinance">Streamline</option>
+                                <option value="VA Interest Rate Reduction">VA IRRRL</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="salesPrice">Sales Price ($)</label>
+                            <input type="number" id="salesPrice" name="salesPrice" value="325000">
+                        </div>
+                        <div class="form-group">
+                            <label for="appraisedValue">Appraised Value ($)</label>
+                            <input type="number" id="appraisedValue" name="appraisedValue" value="325000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="propertyTypeId">Property Type</label>
+                            <select id="propertyTypeId" name="propertyTypeId">
+                                <option value="22" selected>Single Family</option>
+                                <option value="25">2-4 Unit Dwelling</option>
+                                <option value="30">Cooperative</option>
+                                <option value="32">PUD</option>
+                                <option value="34">Condominium</option>
+                                <option value="38">Modular</option>
+                                <option value="48">Site Condo</option>
+                                <option value="52">Manufactured Condo Single Wide</option>
+                                <option value="53">Manufactured PUD Single Wide</option>
+                                <option value="54">Manufactured Single Wide</option>
+                                <option value="55">Manufactured Multi Wide</option>
+                                <option value="56">Manufactured Condo Multi Wide</option>
+                                <option value="57">Manufactured PUD Multi Wide</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="occupancyTypeId">Occupancy</label>
+                            <select id="occupancyTypeId" name="occupancyTypeId">
+                                <option value="1" selected>Primary Residence</option>
+                                <option value="2">Investment Property</option>
+                                <option value="3">Secondary Residence</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="creditScore">Credit Score</label>
+                            <input type="number" id="creditScore" name="creditScore" value="750" min="300" max="850">
+                        </div>
+                        <div class="form-group">
+                            <label for="propertyZipCode">Zip Code</label>
+                            <input type="text" id="propertyZipCode" name="propertyZipCode" value="48341">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="numberOfUnits">Number of Units (if 2-4 unit)</label>
+                            <input type="number" id="numberOfUnits" name="numberOfUnits" value="1" min="1" max="4">
+                        </div>
+                        <div class="form-group">
+                            <label for="attachmentTypeId">Attachment Type</label>
+                            <select id="attachmentTypeId" name="attachmentTypeId">
+                                <option value="0">Attached</option>
+                                <option value="1">Detached</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prepaymentPenaltyId">Prepayment Penalty (Investment)</label>
+                            <select id="prepaymentPenaltyId" name="prepaymentPenaltyId">
+                                <option value="1">None</option>
+                                <option value="2">1 Year</option>
+                                <option value="4">2 Year</option>
+                                <option value="7">3 Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="numberOfFinancedProperties">Financed Properties</label>
+                            <input type="number" id="numberOfFinancedProperties" name="numberOfFinancedProperties" value="1">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="leaseTypeId">Lease Type (Investor Flex)</label>
+                            <select id="leaseTypeId" name="leaseTypeId">
+                                <option value="1">Unleased</option>
+                                <option value="2">Long-Term</option>
+                                <option value="3">Short-Term</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="debtServiceCoverageRatio">DSCR (Decimal)</label>
+                            <input type="number" id="debtServiceCoverageRatio" name="debtServiceCoverageRatio" value="2.00" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mortgageInsuranceType">Mortgage Insurance</label>
+                            <select id="mortgageInsuranceType" name="mortgageInsuranceType">
+                                <option value="1">BPMI (Monthly)</option>
+                                <option value="2">LPMI (Lender Paid)</option>
+                                <option value="3">Split 50</option>
+                                <option value="4">Split 100</option>
+                                <option value="5">Single Premium</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="controlYourPrice">CYP Bps (0-40)</label>
+                            <input type="number" id="controlYourPrice" name="controlYourPrice" value="0" min="0" max="40">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="commitmentPeriodId">Lock Period</label>
+                            <select id="commitmentPeriodId" name="commitmentPeriodId">
+                                <option value="13" selected>30-Day</option>
+                                <option value="21">8-Day</option>
+                                <option value="20">11-Day</option>
+                                <option value="12">15-Day</option>
+                                <option value="19">22-Day</option>
+                                <option value="14">45-Day</option>
+                                <option value="15">60-Day</option>
+                                <option value="16">90-Day</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="secondLoanAmount">Second Loan Amount ($)</label>
+                            <input type="number" id="secondLoanAmount" name="secondLoanAmount" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="monthlyIncome">Monthly Income ($)</label>
+                            <input type="number" id="monthlyIncome" name="monthlyIncome" value="4000">
+                        </div>
+                        <div class="form-group">
+                            <label for="currentMonthlyPayment">Current Payment ($)</label>
+                            <input type="number" id="currentMonthlyPayment" name="currentMonthlyPayment" value="2000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="monthlyDebt">Monthly Debt ($)</label>
+                            <input type="number" id="monthlyDebt" name="monthlyDebt" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="annualTaxes">Annual Taxes ($)</label>
+                            <input type="number" id="annualTaxes" name="annualTaxes" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="annualHomeownersInsurance">Annual Homeowners Ins ($)</label>
+                            <input type="number" id="annualHomeownersInsurance" name="annualHomeownersInsurance" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="annualPercentageRateFees">APR Fees ($)</label>
+                            <input type="number" id="annualPercentageRateFees" name="annualPercentageRateFees" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="monthsOfBankStatementsId">Bank Statement Months</label>
+                            <select id="monthsOfBankStatementsId" name="monthsOfBankStatementsId">
+                                <option value="0">None</option>
+                                <option value="12">12 Months</option>
+                                <option value="24">24 Months</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="compensationPayerTypeID">Comp Payer</label>
+                            <select id="compensationPayerTypeID" name="compensationPayerTypeID">
+                                <option value="1">Borrower Paid</option>
+                                <option value="0">Lender Paid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="targetPriceValue">Target Price</label>
+                            <input type="number" id="targetPriceValue" name="targetPriceValue" value="0" step="0.001">
+                        </div>
+                        <div class="form-group">
+                            <label for="targetCashValue">Target Cash</label>
+                            <input type="number" id="targetCashValue" name="targetCashValue" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="firstTimeHomeBuyer" name="firstTimeHomeBuyer">
+                                First Time Homebuyer
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="isDTIOver45Percent" name="isDTIOver45Percent">
+                                DTI Over 45%
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="selfEmployed" name="selfEmployed">
+                                Self Employed
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="isCorrespondent" name="isCorrespondent">
+                                Correspondent
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="isFirstTimeInvestor" name="isFirstTimeInvestor">
+                                First Time Investor
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="waiveUnderwritingFee" name="waiveUnderwritingFee">
+                                Waive Underwriting Fee
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="buyDownAliasID">Buydown Type</label>
+                            <select id="buyDownAliasID" name="buyDownAliasID">
+                                <option value="None" selected>None</option>
+                                <option value="1-0">1-0</option>
+                                <option value="1-0 LLPA">1-0 LLPA</option>
+                                <option value="1-1">1-1</option>
+                                <option value="1-1 LLPA">1-1 LLPA</option>
+                                <option value="2-1">2-1</option>
+                                <option value="2-1 LLPA">2-1 LLPA</option>
+                                <option value="3-2-1">3-2-1</option>
+                                <option value="3-2-1 LLPA">3-2-1 LLPA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="escrowWaiverTypeId">Escrow Waiver</label>
+                            <select id="escrowWaiverTypeId" name="escrowWaiverTypeId">
+                                <option value="1" selected>Full Escrows</option>
+                                <option value="0">Waive Escrows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="targetRateValue">Target Rate</label>
+                            <input type="number" id="targetRateValue" name="targetRateValue" value="0" step="0.001">
+                        </div>
+                        <div class="form-group">
+                            <label for="financedMortgageInsuranceTypeId">Financed MI Type</label>
+                            <select id="financedMortgageInsuranceTypeId" name="financedMortgageInsuranceTypeId">
+                                <option value="0">None</option>
+                                <option value="6">Standard</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="federalHousingAdministrationSecondarySourceTypeId">FHA Secondary Source</label>
+                            <select id="federalHousingAdministrationSecondarySourceTypeId" name="federalHousingAdministrationSecondarySourceTypeId">
+                                <option value="0">None</option>
+                                <option value="1">Standard</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="exactRateTypeId">Exact Rate Type</label>
+                            <select id="exactRateTypeId" name="exactRateTypeId">
+                                <option value="2" selected>Standard</option>
+                                <option value="1">Exact</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="includeFlexTerms" name="includeFlexTerms">
+                                Include Flex Terms
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="tracTypeId">TRAC Type</label>
+                            <select id="tracTypeId" name="tracTypeId">
+                                <option value="0" selected>None</option>
+                                <option value="1">TRAC</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" id="savePayloadBtn" class="secondary-btn">Save Payload</button>
+                        <button type="button" id="previewBtn" class="secondary-btn">Preview JSON</button>
+                        <button type="submit" id="buildAnalyzeBtn">Analyze Payload</button>
+                    </div>
+                </form>
+
+                <div id="jsonPreview" class="hidden">
+                    <h3>JSON Payload Preview</h3>
+                    <pre id="jsonContent"></pre>
+                    <button type="button" id="downloadBtn" class="secondary-btn">Download JSON</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="hidden">
+            <h2>Results</h2>
+            <div id="resultsContainer"></div>
+        </section>
+
+        <section id="errorSection" class="hidden">
+            <div class="error-message" id="errorMessage"></div>
+        </section>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
