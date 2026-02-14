@@ -1,0 +1,51 @@
+{
+        "brokerAlias": customer.get("brokerAlias", "TEST"),
+        "loanOfficer": customer.get("loanOfficer", customer.get("email", "lofficer@email.com")),
+        "borrowerName": customer.get("borrowerName", customer.get("name", "Unknown")),
+
+        "purposeTypeID": customer.get("purposeTypeID", "3"),
+        "loanTypeIds": customer.get("loanTypeIds", ["0"]),
+        "refinancePurposeId": customer.get("refinancePurposeId", "Rate And Term Reduction-CONV"),
+
+        "salesPrice": customer.get("salesPrice", 0),
+        "appraisedValue": customer.get("appraisedValue", customer.get("propertyValue", 0)),
+        "loanAmount": customer.get("loanAmount", customer.get("remainingBalance", 0)),
+        "secondLoanAmount": customer.get("secondLoanAmount", 0),
+
+        "occupancyTypeId": str(customer.get("occupancyTypeId", "1")),
+        "propertyTypeId": str(customer.get("propertyTypeId", "22")),
+        "propertyZipCode": str(customer.get("propertyZipCode", customer.get("propertyZip", ""))),
+        "propertyCounty": customer.get("propertyCounty", ""),
+        "propertyState": customer.get("propertyState", ""),
+
+        "creditScore": int(customer.get("creditScore", 0)),
+        "commitmentPeriodId": str(customer.get("commitmentPeriodId", "13")),
+
+        "isCorrespondent": bool(customer.get("isCorrespondent", False)),
+        "isDTIOver45Percent": bool(customer.get("isDTIOver45Percent", False)),
+        "monthlyDebt": customer.get("monthlyDebt", 0),
+        "annualTaxes": customer.get("annualTaxes", 0),
+        "annualHomeownersInsurance": customer.get("annualHomeownersInsurance", customer.get("annualInsurance", 0)),
+        "annualPercentageRateFees": customer.get("annualPercentageRateFees", 0),
+        "selfEmployed": bool(customer.get("selfEmployed", False)),
+
+        "monthsOfBankStatementsId": str(customer.get("monthsOfBankStatementsId", "0")),
+        "monthsOfReservesId": str(customer.get("monthsOfReservesId", "0")),
+        "numberOfBorrowers": int(customer.get("numberOfBorrowers", 1)),
+        "compensationPayerTypeID": str(customer.get("compensationPayerTypeID", "1")),
+        "escrowWaiverTypeId": str(customer.get("escrowWaiverTypeId", "1")),
+        "includeFlexTerms": bool(customer.get("includeFlexTerms", False)),
+        "tracTypeId": str(customer.get("tracTypeId", "0")),
+        "waivableFeeTypeIds": customer.get("waivableFeeTypeIds", ["0"]),
+        "loanShieldTypeId": str(customer.get("loanShieldTypeId", "0")),
+        "paPlusTypeId": str(customer.get("paPlusTypeId", "0")),
+        "exactRateTypeId": str(customer.get("exactRateTypeId", "2")),
+        "targetPriceValue": customer.get("targetPriceValue", 0),
+        "targetCashValue": customer.get("targetCashValue", 0),
+        "waiveUnderwritingFee": bool(customer.get("waiveUnderwritingFee", False)),
+        "monthlyIncome": monthly_income,
+
+        "buyDownAliasID": customer.get("buyDownAliasID", "None"),
+        "firstTimeHomeBuyer": bool(customer.get("firstTimeHomeBuyer", False)),
+        "loanTermIds": customer.get("loanTermIds", ["4", "3", "1", "2", "0"]),
+    }
