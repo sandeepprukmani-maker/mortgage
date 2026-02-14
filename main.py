@@ -55,6 +55,7 @@ with app.app_context():
             db.session.add(cust)
         db.session.commit()
 
+
 # ===== Customer CRUD Endpoints =====
 @app.route("/api/customers", methods=["GET"])
 def get_customers():
@@ -77,6 +78,7 @@ def get_customers():
         ]
     )
 
+
 @app.route("/api/customers", methods=["POST"])
 def add_customer():
     data = request.json
@@ -94,6 +96,7 @@ def add_customer():
     db.session.add(new_customer)
     db.session.commit()
     return jsonify({"message": "Customer added", "id": new_customer.id})
+
 
 @app.route("/api/customers/<int:id>", methods=["PUT"])
 def update_customer(id):
@@ -115,12 +118,14 @@ def update_customer(id):
     db.session.commit()
     return jsonify({"message": "Customer updated"})
 
+
 @app.route("/api/customers/<int:id>", methods=["DELETE"])
 def delete_customer(id):
     customer = Customer.query.get_or_404(id)
     db.session.delete(customer)
     db.session.commit()
     return jsonify({"message": "Customer deleted"})
+
 
 # ===== Requests session with SOCKS5 =====
 session = requests.Session()
@@ -133,10 +138,12 @@ session.headers.update(
     }
 )
 
+
 def normalize_text(s: str) -> str:
     s = s.replace("\u00a0", " ")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
+
 
 def safe_float(x):
     try:
@@ -145,6 +152,19 @@ def safe_float(x):
         return float(x)
     except (TypeError, ValueError):
         return None
+
+
+
+def interest_rate_value(ir):
+    """Extract numeric interest rate value.
+
+    The API may return either:
+      - a number (e.g., 4.625)
+      - an object like { "label": "...", "value": 4.625, "display": true }
+    """
+    if isinstance(ir, dict):
+        return safe_float(ir.get("value"))
+    return safe_float(ir)
 
 def to_str_list(v, default: Optional[List[str]] = None) -> List[str]:
     """
@@ -181,6 +201,7 @@ def to_str_list(v, default: Optional[List[str]] = None) -> List[str]:
 
     return default if default is not None else []
 
+
 def parse_api_json(resp: requests.Response) -> Union[Dict[str, Any], List[Any]]:
     try:
         body = resp.json()
@@ -194,12 +215,14 @@ def parse_api_json(resp: requests.Response) -> Union[Dict[str, Any], List[Any]]:
             pass
     return body
 
+
 def strip_invalid_quote_items(full_body: Any) -> Any:
     if isinstance(full_body, dict):
         cleaned = dict(full_body)
         cleaned.pop("invalidQuoteItems", None)
         return cleaned
     return full_body
+
 
 def get_access_token() -> str:
     missing = [
@@ -242,6 +265,7 @@ def get_access_token() -> str:
 
     return access_token
 
+
 # -------------------------
 # ✅ NEW: strict filter helpers
 # -------------------------
@@ -263,6 +287,7 @@ def extract_ui_payload_and_allowed_keys(base_payload: Any) -> (Dict[str, Any], s
 
     return ui_payload, set(ui_payload.keys())
 
+
 def filter_payload_to_allowed_keys(final_payload: Dict[str, Any], allowed_keys: set) -> Dict[str, Any]:
     """
     Keep ONLY keys that were present in the UI payload.
@@ -271,6 +296,7 @@ def filter_payload_to_allowed_keys(final_payload: Dict[str, Any], allowed_keys: 
     if not allowed_keys:
         return final_payload
     return {k: v for k, v in final_payload.items() if k in allowed_keys}
+
 
 # -------------------------
 # existing quote helpers
@@ -306,6 +332,7 @@ def closest_pricepoint_for_item(item: dict, target_amount: float):
         "isBestQuotePricePoint": best_pp.get("isBestQuotePricePoint", False),
     }
     return details, best_diff
+
 
 def customer_to_payload(customer_obj: Any, base_payload: Dict[str, Any] = None) -> Dict[str, Any]:
     # Extract actual payload if base_payload is the new format {payload, excludedFields}
@@ -416,6 +443,7 @@ def customer_to_payload(customer_obj: Any, base_payload: Dict[str, Any] = None) 
         "tracIncentiveID": merged.get("tracIncentiveID"),
     }
 
+
 def post_price_quote(access_token: str, payload: dict) -> requests.Response:
     return session.post(
         PRICEQUOTE_URL,
@@ -427,49 +455,83 @@ def post_price_quote(access_token: str, payload: dict) -> requests.Response:
         timeout=60,
     )
 
+
 def qualifying_products_for_customer(
-    quote_body: Dict[str, Any],
-    current_monthly_payment: float,
-    target_amount: float,
-    min_savings: float = 200.0,
-    tolerance: Optional[float] = None,
+        quote_body: Dict[str, Any],
+        current_monthly_payment: float,
+        target_amount: float,
+        min_savings: float = 200.0,
+        tolerance: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
-    out: List[Dict[str, Any]] = []
+    all_products: List[Dict[str, Any]] = []
 
     for item in (quote_body.get("validQuoteItems") or []):
-        match, diff = closest_pricepoint_for_item(item, target_amount=target_amount)
-        if not match:
-            continue
+        for pp in (item.get("quotePricePoints") or []):
+            fpa = pp.get("finalPriceAfterOriginationFee") or {}
+            amount = safe_float(fpa.get("amount"))
+            if amount is None:
+                continue
 
-        amount = safe_float((match.get("finalPriceAfterOriginationFee") or {}).get("amount"))
-        if tolerance is not None and amount is not None and abs(amount - target_amount) > tolerance:
-            continue
+            if tolerance is not None and abs(amount - target_amount) > tolerance:
+                continue
 
-        mp_val = safe_float((match.get("monthlyPayment") or {}).get("value"))
-        if mp_val is None:
-            continue
+            mp_val = safe_float((pp.get("monthlyPayment") or {}).get("value"))
+            if mp_val is None:
+                continue
 
-        savings = current_monthly_payment - mp_val
-        if savings >= min_savings:
-            out.append(
+            savings = current_monthly_payment - mp_val
+            if savings < min_savings:
+                continue
+
+            ir = pp.get("interestRate")
+            rate_val = interest_rate_value(ir)
+
+            all_products.append(
                 {
-                    "mortgageProductId": match.get("mortgageProductId"),
-                    "mortgageProductName": match.get("mortgageProductName"),
-                    "mortgageProductAlias": match.get("mortgageProductAlias"),
+                    "mortgageProductId": item.get("mortgageProductId"),
+                    "mortgageProductName": item.get("mortgageProductName"),
+                    "mortgageProductAlias": item.get("mortgageProductAlias"),
                     "closestAmount": amount,
-                    "amountDiff": diff,
+                    "amountDiff": abs(amount - target_amount),
                     "matchedMonthlyPayment": mp_val,
                     "currentMonthlyPayment": current_monthly_payment,
                     "monthlySavings": round(savings, 2),
-                    "interestRate": match.get("interestRate"),
-                    "finalPriceAfterOriginationFee": match.get("finalPriceAfterOriginationFee"),
-                    "originationFee": match.get("originationFee"),
-                    "finalPrice": match.get("finalPrice"),
+                    "interestRate": ir,
+                    "rateValue": rate_val,
+                    "finalPriceAfterOriginationFee": pp.get("finalPriceAfterOriginationFee"),
+                    "originationFee": pp.get("originationFee"),
+                    "finalPrice": pp.get("finalPrice"),
                 }
             )
 
-    out.sort(key=lambda x: x["monthlySavings"], reverse=True)
-    return out
+    if not all_products:
+        return []
+
+    # Find the closest to target_amount
+    all_products.sort(key=lambda x: x["amountDiff"])
+    closest = all_products[0]
+
+    target_rate = closest.get("rateValue")
+    if target_rate is None:
+        return [closest]
+
+    higher = [p for p in all_products if p.get("rateValue") is not None and p["rateValue"] > target_rate]
+    lower = [p for p in all_products if p.get("rateValue") is not None and p["rateValue"] < target_rate]
+
+    # 2 higher (nearest above target) + 3 lower (nearest below target)
+    higher.sort(key=lambda x: x["rateValue"])
+    lower.sort(key=lambda x: x["rateValue"], reverse=True)
+
+    selected = [closest]
+    selected.extend(higher[:2])
+    selected.extend(lower[:3])
+
+    # Sort by interest rate for display (highest rate first)
+    selected.sort(key=lambda x: (x.get("rateValue") is None, x.get("rateValue")), reverse=True)
+    return selected
+
+
+
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
@@ -477,6 +539,7 @@ def serve(path):
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, "index.html")
+
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
@@ -509,6 +572,7 @@ def analyze():
             # logger.info("UWM REQUEST PAYLOAD:\n%s", json.dumps({"priceQuoteRequest": payload}, indent=2))
 
             resp = post_price_quote(access_token, payload)
+            print(resp.text)
             if resp.status_code != 200:
                 logger.error(f"Quote failed for {payload.get('borrowerName')}: {resp.text}")
                 continue
@@ -539,6 +603,7 @@ def analyze():
     except Exception as e:
         logger.error(f"Error in analyze: {e}")
         return jsonify({"message": str(e)}), 500
+
 
 @app.route("/api/analyze/direct", methods=["POST"])
 def analyze_direct():
@@ -611,8 +676,9 @@ def analyze_direct():
         return jsonify(results)
 
     except Exception as e:
-        logger.error(f"Error in analyze_direct: {e}")
+        logger.error(f"Error i.n analyze_direct: {e}")
         return jsonify({"message": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
