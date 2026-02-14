@@ -1,0 +1,278 @@
+import os
+import time
+import json
+import re
+import requests
+from dotenv import load_dotenv
+
+# Load variables from .env
+load_dotenv()
+
+# ===== Environment variables =====
+UWM_USERNAME = os.getenv("UWM_USERNAME")
+UWM_PASSWORD = os.getenv("UWM_PASSWORD")
+UWM_CLIENT_ID = os.getenv("UWM_CLIENT_ID")
+UWM_CLIENT_SECRET = os.getenv("UWM_CLIENT_SECRET")
+UWM_SCOPE = os.getenv("UWM_SCOPE")
+SOCKS_PROXY = os.getenv("SOCKS_PROXY")
+
+if not all([
+    UWM_USERNAME,
+    UWM_PASSWORD,
+    UWM_CLIENT_ID,
+    UWM_CLIENT_SECRET,
+    UWM_SCOPE,
+    SOCKS_PROXY
+]):
+    raise RuntimeError("Missing one or more required environment variables")
+
+# ===== Endpoints =====
+TOKEN_URL = "https://sso.uwm.com/adfs/oauth2/token"
+PRICEQUOTE_URL = "https://stg.api.uwm.com/public/instantpricequote/v2/pricequote"
+
+# ===== Requests session with SOCKS5 =====
+session = requests.Session()
+session.proxies = {"http": SOCKS_PROXY, "https": SOCKS_PROXY}
+session.headers.update({
+    "User-Agent": "uwm-ipq-python/1.0",
+    "Accept": "application/json",
+})
+
+def normalize_text(s: str) -> str:
+    s = s.replace("\u00a0", " ")
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
+
+def normalize_json(obj):
+    """Recursively normalize all strings inside dict/list structures."""
+    if isinstance(obj, dict):
+        return {k: normalize_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [normalize_json(v) for v in obj]
+    if isinstance(obj, str):
+        return normalize_text(obj)
+    return obj
+
+def safe_float(x):
+    try:
+        if x is None:
+            return None
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+def get_access_token() -> str:
+    data = {
+        "grant_type": "password",
+        "username": UWM_USERNAME,
+        "password": UWM_PASSWORD,
+        "client_id": UWM_CLIENT_ID,
+        "client_secret": UWM_CLIENT_SECRET,
+        "scope": UWM_SCOPE,
+    }
+
+    resp = session.post(
+        TOKEN_URL,
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=30,
+    )
+
+    if resp.status_code != 200:
+        raise RuntimeError(f"Token request failed ({resp.status_code}):\n{resp.text}")
+
+    token_json = resp.json()
+    access_token = token_json.get("access_token")
+    if not access_token:
+        raise RuntimeError(f"No access_token in response:\n{resp.text}")
+    return access_token
+
+def post_price_quote(access_token: str):
+    payload = {
+        "brokerAlias": "TEST",
+        "loanOfficer": "lofficer@email.com",
+        "borrowerName": "Luca",
+        "purposeTypeID": "3",
+        "loanTypeIds": ["0"],
+        "refinancePurposeId": "Rate And Term Reduction-CONV",
+        "salesPrice": 0,
+        "appraisedValue": 1157600,
+        "loanAmount": 800000,
+        "secondLoanAmount": 0,
+        "occupancyTypeId": "1",
+        "propertyTypeId": "22",
+        "propertyZipCode": "27606",
+        "propertyCounty": "WAKE",
+        "propertyState": "NC",
+        "creditScore": 780,
+        "commitmentPeriodId": "13",
+        "isCorrespondent": False,
+        "isDTIOver45Percent": False,
+        "monthlyDebt": 0,
+        "annualTaxes": 0,
+        "annualHomeownersInsurance": 0,
+        "annualPercentageRateFees": 0,
+        "selfEmployed": False,
+
+        "monthsOfBankStatementsId": "0",
+        "monthsOfReservesId": "0",
+        "numberOfBorrowers": 1,
+        "compensationPayerTypeID": "1",
+        "escrowWaiverTypeId": "1",
+        "includeFlexTerms": False,
+        "tracTypeId": "0",
+        "waivableFeeTypeIds": ["0"],
+        "loanShieldTypeId": "0",
+        "paPlusTypeId": "0",
+        "exactRateTypeId": "2",
+        "targetPriceValue": 0,
+        "targetCashValue": 0,
+        "waiveUnderwritingFee": False,
+        "monthlyIncome": 20000,
+
+        "buyDownAliasID": "2-1 LLPA",
+        "firstTimeHomeBuyer": False,
+        "loanTermIds": ["4", "3", "1", "2", "0"],
+    }
+
+    return session.post(
+        PRICEQUOTE_URL,
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+        timeout=60,
+    )
+
+def print_main_summary(body: dict):
+    print("\n================ MAIN RESPONSE SUMMARY ================")
+    print("loanAmount:", body.get("loanAmount"))
+    print("borrowerName:", body.get("borrowerName"))
+    vqi = body.get("validQuoteItems") or []
+    print("validQuoteItems count:", len(vqi))
+    print("errorMessages:", body.get("errorMessages"))
+
+def closest_pricepoint_for_item(item: dict, target_amount: float):
+    """
+    For ONE validQuoteItem, find the quotePricePoint whose
+    finalPriceAfterOriginationFee.amount is closest to target_amount.
+    Returns (match_dict, diff) or (None, None).
+    """
+    best_pp = None
+    best_diff = None
+
+    for pp in (item.get("quotePricePoints") or []):
+        fpa = pp.get("finalPriceAfterOriginationFee") or {}
+        amt = safe_float(fpa.get("amount"))
+        if amt is None:
+            continue
+
+        diff = abs(amt - target_amount)
+        if best_pp is None or diff < best_diff:
+            best_pp = pp
+            best_diff = diff
+
+    if not best_pp:
+        return None, None
+
+    # Build a compact “details” object for printing
+    details = {
+        "mortgageProductId": item.get("mortgageProductId"),
+        "mortgageProductName": item.get("mortgageProductName"),
+        "mortgageProductAlias": item.get("mortgageProductAlias"),
+        "interestRate": best_pp.get("interestRate"),
+        "finalPriceAfterOriginationFee": best_pp.get("finalPriceAfterOriginationFee"),
+        "finalPrice": best_pp.get("finalPrice"),
+        "originationFee": best_pp.get("originationFee"),
+        "principalAndInterest": best_pp.get("principalAndInterest"),
+        "monthlyPayment": best_pp.get("monthlyPayment"),
+        "isBestQuotePricePoint": best_pp.get("isBestQuotePricePoint", False),
+    }
+    return details, best_diff
+
+def find_for_all_items(body: dict, target_amount: float = -2000.0, tolerance: float | None = None):
+    """
+    For EACH validQuoteItem, pick closest pricepoint to target_amount.
+    If tolerance is provided, only include matches where abs(amount-target) <= tolerance.
+    """
+    results = []
+    for item in (body.get("validQuoteItems") or []):
+        details, diff = closest_pricepoint_for_item(item, target_amount=target_amount)
+        if not details:
+            results.append({
+                "mortgageProductId": item.get("mortgageProductId"),
+                "mortgageProductName": item.get("mortgageProductName"),
+                "mortgageProductAlias": item.get("mortgageProductAlias"),
+                "match": None,
+                "note": "No quotePricePoints with finalPriceAfterOriginationFee.amount"
+            })
+            continue
+
+        amt = safe_float((details.get("finalPriceAfterOriginationFee") or {}).get("amount"))
+        if tolerance is not None and amt is not None and abs(amt - target_amount) > tolerance:
+            # skip if outside tolerance
+            continue
+
+        results.append({
+            "match": details,
+            "diff": diff,
+            "amount": amt,
+        })
+    return results
+
+def main():
+    token = get_access_token()
+    time.sleep(2)
+
+    response = post_price_quote(token)
+
+    print("\n================ RESPONSE =================")
+    print("HTTP Status:", response.status_code)
+
+    try:
+        body = response.json()
+        if isinstance(body, str):
+            body = json.loads(body)
+        body = normalize_json(body)
+
+        # Optional: print full JSON (as before)
+        print("\n--- Body (full JSON) ---")
+        print(json.dumps(body, indent=2, ensure_ascii=False))
+
+        print_main_summary(body)
+
+        TARGET = -2000.0
+        # Optional: only show “close” matches within +/- 500 (change or set to None)
+        TOLERANCE = None  # e.g. 500.0
+
+        results = find_for_all_items(body, target_amount=TARGET, tolerance=TOLERANCE)
+
+        print("\n================ PER-PRODUCT CLOSEST MATCHES ================")
+        print(f"Target finalPriceAfterOriginationFee.amount: {TARGET}")
+        if TOLERANCE is not None:
+            print(f"Tolerance: ±{TOLERANCE}")
+
+        for idx, r in enumerate(results, start=1):
+            m = r.get("match")
+            if not m:
+                print(f"\n[{idx}] {r.get('mortgageProductName')} ({r.get('mortgageProductId')})")
+                print("    ->", r.get("note"))
+                continue
+
+            print(f"\n[{idx}] {m.get('mortgageProductName')} ({m.get('mortgageProductId')})")
+            print("    Alias:", m.get("mortgageProductAlias"))
+            print("    Closest amount:", r.get("amount"), " diff:", r.get("diff"))
+            print("    interestRate:", json.dumps(m.get("interestRate"), indent=2, ensure_ascii=False))
+            print("    finalPriceAfterOriginationFee:", json.dumps(m.get("finalPriceAfterOriginationFee"), indent=2, ensure_ascii=False))
+
+            # Optional extras:
+            print("    originationFee:", m.get("originationFee"))
+            print("    finalPrice:", m.get("finalPrice"))
+            print("    monthlyPayment:", m.get("monthlyPayment"))
+
+    except ValueError:
+        print(response.text)
+
+if __name__ == "__main__":
+    main()
