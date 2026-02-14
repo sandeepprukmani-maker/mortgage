@@ -30,24 +30,31 @@ PRICEQUOTE_URL = "https://stg.api.uwm.com/public/instantpricequote/v2/pricequote
 app = Flask(__name__, static_folder="static", static_url_path="/")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db.init_app(app)
+
+# The error occurs because db.create_all() or other db operations 
+# might be called before db.init_app(app) or outside app context correctly.
+# Also, in models.py, db is imported from models, but main.py might be creating its own instance.
+# Let's fix the imports and initialization.
 
 with app.app_context():
+    db.init_app(app)
     db.create_all()
     # Seed data if empty
     if not Customer.query.first():
-        example_customer = Customer(
-            name="Luca",
-            current_monthly_payment=9000.0,
-            remaining_balance=800000.0,
-            property_value=1157600.0,
-            property_zip="27606",
-            property_county="WAKE",
-            property_state="NC",
-            credit_score=780,
-            monthly_income=20000.0
-        )
-        db.session.add(example_customer)
+        import random
+        for i in range(100):
+            cust = Customer(
+                name=f"Customer {i+1}",
+                current_monthly_payment=random.uniform(1000, 5000),
+                remaining_balance=random.uniform(100000, 500000),
+                property_value=random.uniform(150000, 700000),
+                property_zip=str(random.randint(10000, 99999)),
+                property_county="County",
+                property_state="ST",
+                credit_score=random.randint(600, 850),
+                monthly_income=random.uniform(3000, 15000)
+            )
+            db.session.add(cust)
         db.session.commit()
 
 # ===== Customer CRUD Endpoints =====

@@ -41,26 +41,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const customerTableBody = document.getElementById('customerTableBody');
     const cancelCustomerBtn = document.getElementById('cancelCustomerBtn');
 
+    const customerSearch = document.getElementById('customerSearch');
+    let allCustomers = [];
+
     async function loadCustomers() {
         try {
             const response = await fetch('/api/customers');
-            const customers = await response.json();
-            customerTableBody.innerHTML = customers.map(c => `
-                <tr>
-                    <td>${c.name}</td>
-                    <td>$${c.monthly_income.toLocaleString()}</td>
-                    <td>$${c.current_monthly_payment.toLocaleString()}</td>
-                    <td>${c.credit_score}</td>
-                    <td>
-                        <button class="secondary-btn btn-sm" onclick="editCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">Edit</button>
-                        <button class="secondary-btn btn-sm delete-btn" onclick="deleteCustomer(${c.id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
+            allCustomers = await response.json();
+            renderCustomers(allCustomers);
         } catch (error) {
             console.error('Error loading customers:', error);
         }
     }
+
+    function renderCustomers(customers) {
+        const saved = JSON.parse(localStorage.getItem('savedPayloads') || '{}');
+        const payloadOptions = '<option value="">-- Template --</option>' + 
+            Object.keys(saved).map(name => `<option value="${name}">${name}</option>`).join('');
+
+        customerTableBody.innerHTML = customers.map(c => `
+            <tr>
+                <td>${c.name}</td>
+                <td>$${(c.monthly_income || 0).toLocaleString()}</td>
+                <td>$${(c.current_monthly_payment || 0).toLocaleString()}</td>
+                <td>${c.credit_score}</td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <select class="payload-select-sm" id="payload-${c.id}">
+                            ${payloadOptions}
+                        </select>
+                        <button class="primary-btn btn-sm" onclick="analyzeCustomer(${c.id})">Analyze</button>
+                    </div>
+                </td>
+                <td>
+                    <button class="secondary-btn btn-sm" onclick="editCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">Edit</button>
+                    <button class="secondary-btn btn-sm delete-btn" onclick="deleteCustomer(${c.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    if (customerSearch) {
+        customerSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allCustomers.filter(c => c.name.toLowerCase().includes(term));
+            renderCustomers(filtered);
+        });
+    }
+
+    window.analyzeCustomer = async (customerId) => {
+        const select = document.getElementById(`payload-${customerId}`);
+        const payloadName = select ? select.value : '';
+        const customer = allCustomers.find(c => c.id === customerId);
+        
+        if (!customer) return;
+
+        const saved = JSON.parse(localStorage.getItem('savedPayloads') || '{}');
+        const payloadTemplate = saved[payloadName];
+        
+        let body;
+        if (payloadTemplate) {
+            // Merge customer data into payload template
+            const mergedPayload = { 
+                ...payloadTemplate.payload,
+                borrowerName: customer.name,
+                monthlyIncome: customer.monthly_income,
+                currentMonthlyPayment: customer.current_monthly_payment,
+                creditScore: customer.credit_score,
+                propertyZipCode: customer.property_zip
+            };
+            body = JSON.stringify([mergedPayload]);
+        } else {
+            // Direct analysis with just customer data
+            body = JSON.stringify([customer]);
+        }
+
+        handleAnalysis(body, '/api/analyze/direct?min_savings=200&target_amount=-2000', true);
+        
+        // Switch to analyze tab to show results
+        const analyzeTab = Array.from(tabBtns).find(b => b.dataset.tab === 'analyze');
+        if (analyzeTab) analyzeTab.click();
+    };
 
     window.editCustomer = (customer) => {
         document.getElementById('customerId').value = customer.id;
