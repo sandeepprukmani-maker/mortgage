@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lead Generation - Mortgage Analysis Tool</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .hint { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+    .form-group input::placeholder,
+    .form-group select::placeholder,
+    .form-group textarea::placeholder {
+      color: #d1d5db;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .success-badge {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .warning-badge {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .danger-badge {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>💰 Mortgage Lead Generation & Analysis</h1>
+      <p>Identify qualified leads and analyze refinancing opportunities</p>
+    </header>
+
+    <nav class="tabs">
+      <a href="/index.html" class="tab-link">Lead Generation</a>
+      <a href="/payload-builder.html" class="tab-link">Payload Builder</a>
+      <a href="/customer-management.html" class="tab-link">Customer Management</a>
+    </nav>
+
+    <!-- ===== LEAD GENERATION ===== -->
+    <section id="leadGenSection" class="tab-content active">
+      <div class="screen-header">
+        <h2>Lead Generation</h2>
+        <p>Find customers who can save minimum monthly amount</p>
+      </div>
+
+      <div class="controls">
+        <form id="leadGenForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lgPayloadSelect">Select Payload Template:</label>
+              <select id="lgPayloadSelect" required>
+                <option value="">-- Select a Payload --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lgMinSavings">Min Monthly Savings ($):</label>
+              <input type="number" id="lgMinSavings" value="200" step="10" required />
+            </div>
+            <div class="form-group">
+              <label for="lgTargetAmount">Target Amount (Credit/Cost) ($):</label>
+              <input type="number" id="lgTargetAmount" value="-2000" step="100" required />
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">🔍 Find Qualified Leads</button>
+        </form>
+      </div>
+
+      <div id="leadGenResults" class="hidden">
+        <div class="results-header">
+          <h3>Qualified Leads (<span id="leadCount" class="badge success-badge">0</span>)</h3>
+          <button id="exportLeadsBtn" class="btn-secondary">📥 Export to CSV</button>
+        </div>
+
+        <div class="table-container">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Current Payment</th>
+                <th>New Payment</th>
+                <th>Monthly Savings</th>
+                <th>Annual Savings</th>
+                <th>Product</th>
+                <th>Buydown</th>
+                <th>Rate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leadGenTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DETAILED ANALYSIS MODAL ===== -->
+    <div id="analysisModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalCustomerName">Customer Analysis</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+          <div class="loader">Loading analysis...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loader-overlay hidden" id="loader">
+      <div class="spinner"></div>
+      <p>Analyzing...</p>
+    </div>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Management - Mortgage Analysis Tool</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .hint { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+    .form-group input::placeholder,
+    .form-group select::placeholder,
+    .form-group textarea::placeholder {
+      color: #d1d5db;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: #f3f4f6;
+      color: #374151;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>💰 Mortgage Lead Generation & Analysis</h1>
+      <p>Identify qualified leads and analyze refinancing opportunities</p>
+    </header>
+
+    <nav class="tabs">
+      <a href="/index.html" class="tab-link">Lead Generation</a>
+      <a href="/payload-builder.html" class="tab-link">Payload Builder</a>
+      <a href="/customer-management.html" class="tab-link">Customer Management</a>
+    </nav>
+
+    <!-- ===== CUSTOMER MANAGEMENT ===== -->
+    <section id="customersSection" class="tab-content active">
+      <div class="screen-header">
+        <h2>Customer Management</h2>
+        <p>Manage customers with full history tracking (SCD Type 2)</p>
+      </div>
+
+      <div class="controls">
+        <div class="form-row">
+          <input type="text" id="customerSearch" placeholder="Search customers..." style="flex: 2;" />
+          <button id="addCustomerBtn" class="btn-primary">➕ Add New Customer</button>
+        </div>
+
+        <div id="customerForm" class="hidden">
+          <h3 id="formTitle">Add Customer</h3>
+          <form id="customerFormElement">
+            <input type="hidden" id="customerKey" />
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cName">Name *</label>
+                <input type="text" id="cName" required />
+              </div>
+              <div class="form-group">
+                <label for="cPhone">Phone</label>
+                <input type="tel" id="cPhone" />
+              </div>
+              <div class="form-group">
+                <label for="cEmail">Email</label>
+                <input type="email" id="cEmail" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cPayment">Current Monthly Payment ($) *</label>
+                <input type="number" id="cPayment" required />
+              </div>
+              <div class="form-group">
+                <label for="cBalance">Remaining Balance ($) *</label>
+                <input type="number" id="cBalance" required />
+              </div>
+              <div class="form-group">
+                <label for="cValue">Property Value ($) *</label>
+                <input type="number" id="cValue" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cScore">Credit Score *</label>
+                <input type="number" id="cScore" min="300" max="850" required />
+              </div>
+              <div class="form-group">
+                <label for="cIncome">Monthly Income ($) *</label>
+                <input type="number" id="cIncome" required />
+              </div>
+              <div class="form-group">
+                <label for="cZip">Zip Code *</label>
+                <input type="text" id="cZip" maxlength="5" required />
+                <small id="zipStatus"></small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cState">State (Auto-populated)</label>
+                <input type="text" id="cState" maxlength="2" readonly />
+              </div>
+              <div class="form-group">
+                <label for="cCounty">County (Auto-populated)</label>
+                <input type="text" id="cCounty" readonly />
+              </div>
+              <div class="form-group">
+                <label for="cCity">City (Auto-populated)</label>
+                <input type="text" id="cCity" readonly />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">💾 Save Customer</button>
+              <button type="button" id="cancelCustomerBtn" class="btn-secondary">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-container">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Payment</th>
+                <th>Credit Score</th>
+                <th>Version</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="loader-overlay hidden" id="loader">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
+
