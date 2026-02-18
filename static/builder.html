@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payload Builder - Mortgage Analytics</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Sidebar Navigation -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path d="M16 2L4 10v12c0 7.732 5.373 11.732 12 12 6.627-.268 12-4.268 12-12V10L16 2z" fill="url(#gradient)" stroke="white" stroke-width="1.5"/>
+          <defs>
+            <linearGradient id="gradient" x1="4" y1="2" x2="28" y2="26">
+              <stop offset="0%" stop-color="#667eea"/>
+              <stop offset="100%" stop-color="#764ba2"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>MortgageAI</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M3 9l7-7 7 7v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="/customers.html" class="nav-item">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M17 19v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M13 5a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Customers</span>
+      </a>
+
+      <a href="/leads.html" class="nav-item">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M9 11l3 3L22 4M2 12l5 5 3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Find Leads</span>
+      </a>
+
+      <a href="/builder.html" class="nav-item active">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Payload Builder</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title">Payload Builder</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 17a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="user-avatar">
+          <span>JD</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+      <div class="page-header">
+        <div class="page-header-content">
+          <h2>Payload Builder</h2>
+          <p>Create and manage payload templates for mortgage analysis</p>
+        </div>
+        <button id="newPayloadBtn" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          New Template
+        </button>
+      </div>
+
+      <!-- Saved Payloads Section -->
+      <div class="search-panel">
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr auto;">
+          <div class="form-group">
+            <label for="payloadSelect">Saved Templates</label>
+            <select id="payloadSelect">
+              <option value="">-- Select a Template --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="button" id="loadPayloadBtn" class="btn-secondary" style="width: 100%;">Load</button>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="button" id="deletePayloadBtn" class="btn-secondary" style="width: 100%;">Delete</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <label for="jsonImport">Import from JSON</label>
+          <textarea id="jsonImport" rows="4" placeholder='Paste JSON here... e.g. {"borrowerName": "John", ...}'></textarea>
+          <button type="button" id="importJsonBtn" class="btn-primary" style="margin-top: 0.5rem;">Import JSON</button>
+        </div>
+      </div>
+
+      <!-- Payload Form -->
+      <form id="builderForm">
+        <!-- Template Name -->
+        <div class="form-section">
+          <h4>Template Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="payloadName">Template Name <span class="required">*</span></label>
+              <input type="text" id="payloadName" required placeholder="e.g. Standard Refinance Template" />
+              <small class="form-hint">Give this template a memorable name</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Borrower Information -->
+        <div class="form-section">
+          <h4>Borrower Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="borrowerName" />
+                Borrower Name
+              </label>
+              <input type="text" id="borrowerName" value="John Homeowner" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="brokerAlias" />
+                Broker Alias
+              </label>
+              <input type="text" id="brokerAlias" value="ABC123" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="loanOfficer" />
+                Loan Officer Email
+              </label>
+              <input type="email" id="loanOfficer" value="lofficer@email.com" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Loan Details -->
+        <div class="form-section">
+          <h4>Loan Details</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="loanAmount" />
+                Loan Amount ($)
+              </label>
+              <input type="number" id="loanAmount" value="300000" step="1000" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="loanTypeIds" />
+                Loan Types
+              </label>
+              <select id="loanTypeIds" multiple style="height: auto;">
+                <option value="0" selected>Conventional</option>
+                <option value="1">Conventional ARM</option>
+                <option value="2">FHA</option>
+                <option value="3">FHA ARM</option>
+                <option value="4">VA</option>
+                <option value="5">VA ARM</option>
+                <option value="6">USDA</option>
+              </select>
+              <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="purposeTypeID" />
+                Purpose
+              </label>
+              <select id="purposeTypeID">
+                <option value="1">Purchase Home</option>
+                <option value="3" selected>Refinance 1st Mortgage</option>
+                <option value="6">Construction Purchase</option>
+                <option value="12">Construction Refinance</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="refinancePurposeId" />
+                Refinance Purpose
+              </label>
+              <select id="refinancePurposeId">
+                <option value="Cash Out">Cash Out</option>
+                <option value="Rate And Term Reduction-CONV" selected>Rate And Term Reduction-CONV</option>
+                <option value="Rate And Term Reduction-FHA">Rate And Term Reduction-FHA</option>
+                <option value="Streamline Refinance">Streamline Refinance</option>
+                <option value="VA Interest Rate Reduction">VA Interest Rate Reduction</option>
+                <option value="VA Cash Out - Type I">VA Cash Out - Type I</option>
+                <option value="VA Cash Out - Type II">VA Cash Out - Type II</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Property Details -->
+        <div class="form-section">
+          <h4>Property Details</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="salesPrice" />
+                Sales Price ($)
+              </label>
+              <input type="number" id="salesPrice" value="325000" step="1000" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="appraisedValue" />
+                Appraised Value ($)
+              </label>
+              <input type="number" id="appraisedValue" value="325000" step="1000" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="propertyTypeId" />
+                Property Type
+              </label>
+              <select id="propertyTypeId">
+                <option value="22" selected>Single Family Residence</option>
+                <option value="25">2–4 Unit Dwelling</option>
+                <option value="30">Cooperative</option>
+                <option value="32">PUD</option>
+                <option value="34">Condominium</option>
+                <option value="38">Modular</option>
+                <option value="48">Site Condo</option>
+                <option value="52">Manufactured Condo Single Wide</option>
+                <option value="53">Manufactured PUD Single Wide</option>
+                <option value="54">Manufactured Single Wide</option>
+                <option value="55">Manufactured Multi Wide</option>
+                <option value="56">Manufactured Condo Multi Wide</option>
+                <option value="57">Manufactured PUD Multi Wide</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="occupancyTypeId" />
+                Occupancy Type
+              </label>
+              <select id="occupancyTypeId">
+                <option value="1" selected>Primary Residence</option>
+                <option value="2">Investment Property</option>
+                <option value="3">Secondary Residence</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="propertyZipCode" />
+                Property Zip Code
+              </label>
+              <input type="text" id="propertyZipCode" value="48341" maxlength="5" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="propertyCounty" />
+                Property County
+              </label>
+              <input type="text" id="propertyCounty" value="" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="propertyState" />
+                Property State
+              </label>
+              <input type="text" id="propertyState" value="" maxlength="2" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="numberOfUnits" />
+                Number of Units
+              </label>
+              <input type="number" id="numberOfUnits" value="1" min="1" max="4" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="attachmentTypeId" />
+                Attachment Type
+              </label>
+              <select id="attachmentTypeId">
+                <option value="0" selected>Attached</option>
+                <option value="1">Detached</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Borrower Qualifications -->
+        <div class="form-section">
+          <h4>Borrower Qualifications</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="creditScore" />
+                Credit Score
+              </label>
+              <input type="number" id="creditScore" value="750" min="300" max="850" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="monthlyIncome" />
+                Monthly Income ($)
+              </label>
+              <input type="number" id="monthlyIncome" value="4000" step="100" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="monthlyDebt" />
+                Monthly Debt ($)
+              </label>
+              <input type="number" id="monthlyDebt" value="0" step="100" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="numberOfBorrowers" />
+                Number of Borrowers
+              </label>
+              <select id="numberOfBorrowers">
+                <option value="1" selected>One Borrower</option>
+                <option value="2">Two Borrowers</option>
+                <option value="3">Three Borrowers</option>
+                <option value="4">Four Borrowers</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Costs -->
+        <div class="form-section">
+          <h4>Additional Costs & Insurance</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="annualTaxes" />
+                Annual Property Taxes ($)
+              </label>
+              <input type="number" id="annualTaxes" value="0" step="100" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="annualHomeownersInsurance" />
+                Annual Homeowners Insurance ($)
+              </label>
+              <input type="number" id="annualHomeownersInsurance" value="0" step="100" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="annualPercentageRateFees" />
+                APR Fees ($)
+              </label>
+              <input type="number" id="annualPercentageRateFees" value="0" step="100" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="mortgageInsuranceType" />
+                Mortgage Insurance Type
+              </label>
+              <select id="mortgageInsuranceType">
+                <option value="1" selected>BPMI (Monthly)</option>
+                <option value="2">LPMI Lender Paid</option>
+                <option value="3">Split 50</option>
+                <option value="4">Split 100</option>
+                <option value="5">Single Premium</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loan Terms -->
+        <div class="form-section">
+          <h4>Loan Terms & Lock Period</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="commitmentPeriodId" />
+                Lock Period
+              </label>
+              <select id="commitmentPeriodId">
+                <option value="13" selected>30-Day</option>
+                <option value="21">8-Day</option>
+                <option value="20">11-Day</option>
+                <option value="12">15-Day</option>
+                <option value="19">22-Day</option>
+                <option value="14">45-Day</option>
+                <option value="15">60-Day</option>
+                <option value="16">90-Day</option>
+                <option value="17">120-Day</option>
+                <option value="18">180-Day</option>
+                <option value="22">150-Day</option>
+                <option value="23">270-Day</option>
+                <option value="24">365-Day</option>
+                <option value="-1">Custom</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="prepaymentPenaltyId" />
+                Prepayment Penalty
+              </label>
+              <select id="prepaymentPenaltyId">
+                <option value="1" selected>None</option>
+                <option value="2">1 Year Penalty</option>
+                <option value="4">2 Year Penalty</option>
+                <option value="7">3 Year Penalty</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="secondLoanAmount" />
+                Second Loan Amount ($)
+              </label>
+              <input type="number" id="secondLoanAmount" value="0" step="1000" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="controlYourPrice" />
+                Control Your Price (CYP) Bps
+              </label>
+              <input type="number" id="controlYourPrice" value="0" min="0" max="40" />
+              <small class="form-hint">0-40 basis points</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="form-section">
+          <h4>Advanced Options</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="numberOfFinancedProperties" />
+                Number of Financed Properties
+              </label>
+              <input type="number" id="numberOfFinancedProperties" value="1" min="0" max="10" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="monthsOfReservesId" />
+                Months of Reserves
+              </label>
+              <input type="number" id="monthsOfReservesId" value="0" step="0.1" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="monthsOfBankStatementsId" />
+                Bank Statement Months
+              </label>
+              <select id="monthsOfBankStatementsId">
+                <option value="0" selected>None</option>
+                <option value="12">12 Months</option>
+                <option value="24">24 Months</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="compensationPayerTypeID" />
+                Compensation Payer
+              </label>
+              <select id="compensationPayerTypeID">
+                <option value="0">Borrower Paid</option>
+                <option value="1" selected>Lender Paid</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="exactRateTypeId" />
+                Exact Rate Type
+              </label>
+              <select id="exactRateTypeId">
+                <option value="2" selected>Target Price After Compensation</option>
+                <option value="1">Target Rate</option>
+                <option value="3">Target Price Before Compensation</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="leaseTypeId" />
+                Lease Type (Investor Flex)
+              </label>
+              <select id="leaseTypeId">
+                <option value="1" selected>Unleased</option>
+                <option value="2">Long-Term Lease</option>
+                <option value="3">Short-Term Rental</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="debtServiceCoverageRatio" />
+                DSCR (Decimal)
+              </label>
+              <input type="number" id="debtServiceCoverageRatio" value="2.00" step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Boolean Flags -->
+        <div class="form-section">
+          <h4>Additional Criteria</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="includeFlexTerms" />
+                <input type="checkbox" id="includeFlexTerms" />
+                Include Flex Terms
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="firstTimeHomeBuyer" />
+                <input type="checkbox" id="firstTimeHomeBuyer" />
+                First Time Homebuyer
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isDTIOver45Percent" />
+                <input type="checkbox" id="isDTIOver45Percent" />
+                DTI Over 45%
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="selfEmployed" />
+                <input type="checkbox" id="selfEmployed" />
+                Self Employed
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isCorrespondent" />
+                <input type="checkbox" id="isCorrespondent" />
+                Correspondent
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="isFirstTimeInvestor" />
+                <input type="checkbox" id="isFirstTimeInvestor" />
+                First Time Investor
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="cursor: pointer;">
+                <input type="checkbox" class="field-toggle" data-field="waiveUnderwritingFee" />
+                <input type="checkbox" id="waiveUnderwritingFee" />
+                Waive Underwriting Fee
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Fields from Reference -->
+        <div class="form-section">
+          <h4>Buydown & Target Values</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="buyDownAliasID" />
+                Buydown Type
+              </label>
+              <select id="buyDownAliasID">
+                <option value="None" selected>None</option>
+                <option value="1-0">1-0</option>
+                <option value="1-0 LLPA">1-0 LLPA</option>
+                <option value="1-1">1-1</option>
+                <option value="1-1 LLPA">1-1 LLPA</option>
+                <option value="2-1">2-1</option>
+                <option value="2-1 LLPA">2-1 LLPA</option>
+                <option value="3-2-1">3-2-1</option>
+                <option value="3-2-1 LLPA">3-2-1 LLPA</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="targetPriceValue" />
+                Target Price Value
+              </label>
+              <input type="number" id="targetPriceValue" value="0" step="0.001" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="targetCashValue" />
+                Target Cash Value
+              </label>
+              <input type="number" id="targetCashValue" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="targetRateValue" />
+                Target Rate Value
+              </label>
+              <input type="number" id="targetRateValue" value="0" step="0.001" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Escrow & Term Options -->
+        <div class="form-section">
+          <h4>Escrow & Loan Term Options</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="escrowWaiverTypeId" />
+                Escrow Waiver
+              </label>
+              <select id="escrowWaiverTypeId">
+                <option value="1" selected>No Waiver</option>
+                <option value="2">Waive Taxes Only</option>
+                <option value="3">Waive Hazard Insurance Only</option>
+                <option value="4">Waive Taxes & Hazard Insurance</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="loanTermIds" />
+                Loan Terms (Years)
+              </label>
+              <select id="loanTermIds" multiple style="height: auto;">
+                <option value="5">40 Years (Conventional only)</option>
+                <option value="4" selected>30 Years</option>
+                <option value="3">25 Years</option>
+                <option value="2">20 Years</option>
+                <option value="1">15 Years</option>
+                <option value="0">10 Years</option>
+              </select>
+              <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Waivable Fees & Services -->
+        <div class="form-section">
+          <h4>Fees & Services</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="waivableFeeTypeIds" />
+                Waivable Fees
+              </label>
+              <select id="waivableFeeTypeIds" multiple style="height: auto;">
+                <option value="0" selected>Underwriting Fee</option>
+                <option value="2">TRAC+ Fee</option>
+                <option value="3">PA+ Fee</option>
+              </select>
+              <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="loanShieldTypeId" />
+                Loan Shield
+              </label>
+              <select id="loanShieldTypeId">
+                <option value="0" selected>Do not include Loan Shield</option>
+                <option value="1">Include Loan Shield</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="paPlusTypeId" />
+                PA+ Type
+              </label>
+              <select id="paPlusTypeId">
+                <option value="0" selected>In-House</option>
+                <option value="1">PA+ Full Service</option>
+                <option value="6">PA+ Setup and Underwriting</option>
+                <option value="7">PA+ Setup and Closing</option>
+                <option value="8">PA+ Underwriting and Closing</option>
+                <option value="2">PA+ Setup Only</option>
+                <option value="3">PA+ Underwriting Only</option>
+                <option value="4">PA+ Closing Only</option>
+                <option value="5">Third-Party Processor</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- VA & FHA Specific -->
+        <div class="form-section">
+          <h4>VA & FHA Specific Options</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="financedMortgageInsuranceTypeId" />
+                VA Funding Fee Type
+              </label>
+              <select id="financedMortgageInsuranceTypeId">
+                <option value="6" selected>Financed</option>
+                <option value="7">Non-Financed</option>
+                <option value="12">Exempt</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="useMortgageInsuranceTypeIds" />
+                VA Use Types
+              </label>
+              <select id="useMortgageInsuranceTypeIds" multiple style="height: auto;">
+                <option value="8" selected>First Use</option>
+                <option value="9">Subsequent Use</option>
+              </select>
+              <small class="form-hint">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="federalHousingAdministrationSecondarySourceTypeId" />
+                FHA Secondary Source
+              </label>
+              <select id="federalHousingAdministrationSecondarySourceTypeId">
+                <option value="1" selected>Government</option>
+                <option value="2">Non-Profit</option>
+                <option value="3">Family/Relative</option>
+                <option value="4">Employee/Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRAC Options -->
+        <div class="form-section">
+          <h4>TRAC Options</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="tracTypeId" />
+                TRAC Type
+              </label>
+              <select id="tracTypeId">
+                <option value="0" selected>Traditional Lenders Policy</option>
+                <option value="2">TRAC+</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" class="field-toggle" data-field="tracIncentiveID" />
+                TRAC Incentive
+              </label>
+              <select id="tracIncentiveID">
+                <option value="">(none)</option>
+                <option value="1">Apply Credit as an LLPA</option>
+                <option value="2">Send Check to Borrower</option>
+                <option value="3">Apply Credit in Fees</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" id="previewBtn" class="btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Preview JSON
+          </button>
+          <button type="submit" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M13 3L6 10l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Save Template
+          </button>
+        </div>
+      </form>
+
+      <!-- JSON Preview Modal -->
+      <div id="previewModal" class="modal hidden">
+        <div class="modal-content large">
+          <div class="modal-header">
+            <h3>JSON Preview</h3>
+            <button class="modal-close" id="closePreviewBtn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <pre id="jsonPreview" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--border-radius-md); overflow-x: auto; font-size: 0.875rem; line-height: 1.6;"></pre>
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+              <button id="copyJsonBtn" class="btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="4" y="4" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <path d="M8 4V2h6v6h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Copy JSON
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/common.js"></script>
+  <script src="/builder.js"></script>
+</body>
+</html>
